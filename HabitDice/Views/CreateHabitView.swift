@@ -17,7 +17,7 @@ struct CreateHabitView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HeaderView()
+            HeaderView(title: "습관 만들기", subTitle: "2026년 3월 30일")
             
             Divider()
             
@@ -25,24 +25,25 @@ struct CreateHabitView: View {
                 actionSection
             }
         }
+        .hSpacing(.center)
+        .padding(.horizontal, 4)
         
     }
     
-    
-    @ViewBuilder
-    func HeaderView() -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("습관 만들기")
-                .font(.title.bold())
-            Text("2026년 3월 29일")
-                .font(.callout)
-                .fontWeight(.semibold)
-                .textScale(.secondary)
-                .foregroundStyle(.gray)
-        }
-        .hSpacing(.leading)
-        .padding(16)
-    }
+//    @ViewBuilder
+//    func HeaderView() -> some View {
+//        VStack(alignment: .leading, spacing: 4) {
+//            Text("습관 만들기")
+//                .font(.title.bold())
+//            Text("2026년 3월 29일")
+//                .font(.callout)
+//                .fontWeight(.semibold)
+//                .textScale(.secondary)
+//                .foregroundStyle(.gray)
+//        }
+//        .hSpacing(.leading)
+//        .padding(16)
+//    }
     
     
     private var actionSection: some View {
@@ -97,6 +98,10 @@ struct CreateHabitView: View {
     
 }
 
-#Preview {
+#Preview("CreateHabitView Only") {
+    CreateHabitView()
+}
+
+#Preview("Flow - ContentView") {
     ContentView()
 }
