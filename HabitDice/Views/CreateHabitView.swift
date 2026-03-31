@@ -17,7 +17,7 @@ struct CreateHabitView: View {
     // 추천 습관 데이터
     private let recommendedHabits: [(icon: String, title: String)] = [
         // 🧠 정신
-        ("brain.head.profile", "명상 1분"),
+        ("brain.head.profile", "명상 1분 하기"),
         ("pencil", "감사 1줄 쓰기"),
         ("target", "오늘 목표 1개 적기"),
         
@@ -27,22 +27,21 @@ struct CreateHabitView: View {
         ("headphones", "유익한 콘텐츠 1분 듣기"),
         
         // 💪 신체
-        ("figure.walk", "제자리 걸음 1분"),
-        ("figure.strengthtraining.traditional", "스쿼트 5개"),
-        ("figure.walk.treadmill", "달리기 30분"),
+        ("figure.walk", "제자리 걸음 1분 하기"),
+        ("figure.strengthtraining.traditional", "스쿼트 5개 하기"),
+        ("figure.walk.treadmill", "달리기 30분 하기"),
         
         // 💧 건강
-        ("drop.fill", "물 1잔"),
+        ("drop.fill", "물 1잔 마시기"),
         ("applelogo", "과일 1종류 먹기"),
         ("moon.stars","야식 먹지 않기"),
         
         
         // 🌙 마무리
-        ("sparkles", "책상 정리 1분"),
-        ("iphone", "SNS 10분만"),
-        ("moon.stars.fill", "오늘 한 일 1줄 기록")
+        ("sparkles", "책상 정리 1분 하기"),
+        ("iphone", "SNS 10분만 하기"),
+        ("moon.stars.fill", "오늘 한 일 1줄 기록하기")
     ]
-    
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -137,7 +136,6 @@ struct CreateHabitView: View {
     //        }
     //    }
     
-    
     private var recommendedArea: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionLabel("ℹ️ 이런 습관을 어떠세요?")
@@ -172,8 +170,6 @@ struct CreateHabitView: View {
             }
         }
     }
-    
-    
     
     
     // 추천 습관
@@ -253,6 +249,7 @@ struct CreateHabitView: View {
     ContentView()
 }
 
+
 #Preview("Recommend Card Test") {
     
     struct PreviewWrapper: View {
@@ -327,3 +324,5 @@ struct CreateHabitView: View {
     return PreviewWrapper()
     
 }
+
+
