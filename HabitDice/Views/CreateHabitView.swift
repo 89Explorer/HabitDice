@@ -128,7 +128,7 @@ struct CreateHabitView: View {
             }
         }
     }
-    
+
     
     // 추천 습관
     private func recommendedCard(_ habit: (icon: String, title: String)) -> some View {
@@ -164,7 +164,7 @@ struct CreateHabitView: View {
                 Spacer()
                 
                 if isSelected {
-                    Image(systemName: "checkmark.square.fill")
+                    Image(systemName: "checkmark.circle.fill")
                         .foregroundStyle(Color.accentColor)
                         .font(.system(size: 18))
                         .transition(.scale.combined(with: .opacity))
