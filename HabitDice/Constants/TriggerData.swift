@@ -11,7 +11,7 @@ import Foundation
 let recommendedTriggers: [Trigger] = [
     Trigger(
         title: "🔄 일상 고정 루틴",
-        subTitle: "이미 하고 있는 일, 일상의 닻(Anchor)",
+        subTitle: "이미 하고 있는 일, 일상의 닻",
         items: [
             "양치질을 마쳤을 때",
             "커피 첫 모금을 마실 때",

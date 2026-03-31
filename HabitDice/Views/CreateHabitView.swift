@@ -12,6 +12,8 @@ struct CreateHabitView: View {
     
     @State private var customHabit: String = ""
     @State private var selectedHabit: String? = nil
+    @State private var selectedTrigger: String? = nil
+    
     @FocusState private var isTextFieldFocused: Bool
     
     // 추천 습관 데이터
@@ -44,13 +46,14 @@ struct CreateHabitView: View {
     ]
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 12) {
             HeaderView(title: "습관 만들기", subTitle: "2026년 3월 30일")
             
             Divider()
             
-            ScrollView(.vertical) {
+            ScrollView(.vertical, showsIndicators: false) {
                 actionSection
+                triggerSection
             }
         }
         .padding(.horizontal, 8)
@@ -59,22 +62,6 @@ struct CreateHabitView: View {
         )
         
     }
-    
-    //    @ViewBuilder
-    //    func HeaderView() -> some View {
-    //        VStack(alignment: .leading, spacing: 4) {
-    //            Text("습관 만들기")
-    //                .font(.title.bold())
-    //            Text("2026년 3월 29일")
-    //                .font(.callout)
-    //                .fontWeight(.semibold)
-    //                .textScale(.secondary)
-    //                .foregroundStyle(.gray)
-    //        }
-    //        .hSpacing(.leading)
-    //        .padding(16)
-    //    }
-    
     
     private var actionSection: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -85,6 +72,24 @@ struct CreateHabitView: View {
             recommendedArea
                 .padding(.bottom, -20)
             
+        }
+        .hSpacing(.leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(uiColor: .systemBackground))
+        )
+    }
+    
+    private var triggerSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("트리거 선택")
+                .font(.system(size: 18, weight: .semibold))
+            
+            ForEach(recommendedTriggers) { trigger in
+                recommendedTriggerArea(trigger: trigger)
+            }
         }
         .hSpacing(.leading)
         .padding(.horizontal, 12)
@@ -125,16 +130,7 @@ struct CreateHabitView: View {
                 .padding(.horizontal, 10)
         }
     }
-    
-    //    private var recommendedArea: some View {
-    //        VStack(alignment: .leading, spacing: 10) {
-    //            sectionLabel("ℹ️ 이런 습관을 어떠세요?")
-    //
-    //            ForEach(recommendedHabits, id: \.title) { habit in
-    //                recommendedCard(habit)
-    //            }
-    //        }
-    //    }
+
     
     private var recommendedArea: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -231,6 +227,61 @@ struct CreateHabitView: View {
         .buttonStyle(.plain)
     }
     
+    
+    private func recommendedTriggerArea(trigger: Trigger) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionLabel(trigger.title)
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(trigger.items, id: \.self) { item in
+                        recommendedTrigger(item)
+                    }
+                }
+                .padding(.vertical, 6)
+                //.padding(.horizontal, 10)
+            }
+        }
+    }
+    
+    // 추천 트리거
+    private func recommendedTrigger(_ title: String) -> some View {
+        let isSelected = selectedTrigger == title
+        
+        return Button {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                if isSelected {
+                    selectedTrigger = nil
+                } else {
+                    selectedTrigger = title
+                }
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Text(title)
+                    .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
+                    .foregroundStyle(isSelected ? Color.accentColor : .primary)
+                
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color.accentColor)
+                        .transition(.scale.combined(with: .opacity))
+                }
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isSelected ? Color.accentColor.opacity(0.12) : Color(.systemGray5))
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(isSelected ? Color.accentColor.opacity(0.5) : Color.clear, lineWidth: 1.5)
+            }
+        }
+        .buttonStyle(.plain)
+    }
     
     // MARK: - Helper
     private func sectionLabel(_ text: String) -> some View {
