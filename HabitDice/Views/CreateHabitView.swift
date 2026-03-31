@@ -54,8 +54,10 @@ struct CreateHabitView: View {
                 actionSection
             }
         }
-        .hSpacing(.center)
-        .padding(.horizontal, 4)
+        .padding(.horizontal, 8)
+        .background(
+            Color(uiColor: .secondarySystemBackground)
+        )
         
     }
     
@@ -82,11 +84,16 @@ struct CreateHabitView: View {
             
             directInputArea
             recommendedArea
+                .padding(.bottom, -20)
             
         }
         .hSpacing(.leading)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 12)
         .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(uiColor: .systemBackground))
+        )
     }
     
     
@@ -99,6 +106,7 @@ struct CreateHabitView: View {
                 .font(.system(size: 14))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 14)
+                .hSpacing(.leading)
                 .background(
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color(.systemGray5))
@@ -115,7 +123,7 @@ struct CreateHabitView: View {
                     // 직접 입력 시 추천 선택 해제
                     if !newValue.isEmpty { selectedHabit = nil }
                 }
-            
+                .padding(.horizontal, 10)
         }
     }
     
@@ -142,6 +150,7 @@ struct CreateHabitView: View {
                     VStack(spacing: 10) {
                         ForEach(chunks[pageIndex], id: \.title) { habit in
                             recommendedCard(habit)
+                                .padding(.horizontal , 10)
                         }
                         
                         if chunks[pageIndex].count < 3 {
@@ -149,15 +158,16 @@ struct CreateHabitView: View {
                         }
                     }
                 }
+                .padding(.horizontal, 0)
                 .padding(.bottom, 36)
                 
             }
-            .frame(height: CGFloat(3) * 60 + CGFloat(2) * 10 + 45)
+            .frame(height: CGFloat(3) * 60 + CGFloat(2) * 10 + 20)
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
             .onAppear {
                 // 현재 페이지 점의 색상
                 UIPageControl.appearance().currentPageIndicatorTintColor = .systemBlue
-                // 나머지 페이지 점의 색상 (반투명하게 처리하면 더 예쁩니다)
+                // 나머지 페이지 점의 색상
                 UIPageControl.appearance().pageIndicatorTintColor = UIColor.systemBlue.withAlphaComponent(0.3)
             }
         }
@@ -207,7 +217,7 @@ struct CreateHabitView: View {
                 }
             }
             .padding(.horizontal, 14)
-            .padding(.vertical, 12)
+            .padding(.vertical, 8)
             .background(
                 RoundedRectangle(cornerRadius: 12)
                     .fill(
