@@ -119,16 +119,52 @@ struct CreateHabitView: View {
         }
     }
     
+    //    private var recommendedArea: some View {
+    //        VStack(alignment: .leading, spacing: 10) {
+    //            sectionLabel("ℹ️ 이런 습관을 어떠세요?")
+    //
+    //            ForEach(recommendedHabits, id: \.title) { habit in
+    //                recommendedCard(habit)
+    //            }
+    //        }
+    //    }
+    
+    
     private var recommendedArea: some View {
         VStack(alignment: .leading, spacing: 10) {
             sectionLabel("ℹ️ 이런 습관을 어떠세요?")
             
-            ForEach(recommendedHabits, id: \.title) { habit in
-                recommendedCard(habit)
+            // 3개씩 나누기
+            let chunks = recommendedHabits.chunked(into: 3)
+            
+            TabView {
+                ForEach(chunks.indices, id: \.self) { pageIndex in
+                    VStack(spacing: 10) {
+                        ForEach(chunks[pageIndex], id: \.title) { habit in
+                            recommendedCard(habit)
+                        }
+                        
+                        if chunks[pageIndex].count < 3 {
+                            ForEach(0..<(3 - chunks[pageIndex].count), id: \.self) { _ in Color.clear.frame(height: 60) }
+                        }
+                    }
+                }
+                .padding(.bottom, 36)
+                
+            }
+            .frame(height: CGFloat(3) * 60 + CGFloat(2) * 10 + 45)
+            .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
+            .onAppear {
+                // 현재 페이지 점의 색상
+                UIPageControl.appearance().currentPageIndicatorTintColor = .systemBlue
+                // 나머지 페이지 점의 색상 (반투명하게 처리하면 더 예쁩니다)
+                UIPageControl.appearance().pageIndicatorTintColor = UIColor.systemBlue.withAlphaComponent(0.3)
             }
         }
     }
-
+    
+    
+    
     
     // 추천 습관
     private func recommendedCard(_ habit: (icon: String, title: String)) -> some View {
@@ -227,7 +263,7 @@ struct CreateHabitView: View {
         }
         
         private func recommendedCardPreview(icon: String, title: String) -> some View {
-    
+            
             let habit = (icon: icon, title: title)
             let isSelected = selectedHabit == habit.title
             
