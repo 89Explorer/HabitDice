@@ -23,7 +23,7 @@ struct HeaderView: View {
                 .foregroundStyle(.gray)
         }
         .hSpacing(.leading)
-        .padding(.horizontal, 16)
+        //.padding(.horizontal, 16)
         .padding(.vertical, 8)
     }
 }

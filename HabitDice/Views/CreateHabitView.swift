@@ -13,8 +13,10 @@ struct CreateHabitView: View {
     @State private var customHabit: String = ""
     @State private var selectedHabit: String? = nil
     @State private var selectedTrigger: String? = nil
+    @State private var isShowingCancelConfirmation: Bool = false
     
     @FocusState private var isTextFieldFocused: Bool
+    @Environment(\.dismiss) private var dismiss
     
     var isCompleted: Bool {
         
@@ -55,34 +57,64 @@ struct CreateHabitView: View {
     
     var body: some View {
         
-        ZStack(alignment: .bottom) {
-            VStack(alignment: .leading, spacing: 12) {
-                HeaderView(title: "습관 만들기", subTitle: "2026년 3월 30일")
-                
-                Divider()
-                
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 20) {
-                        actionSection
-                        triggerSection
+            ZStack(alignment: .bottom) {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        HeaderView(title: "습관 만들기", subTitle: "2026년 3월 30일")
+                        Spacer()
+                        Button {
+                            
+                            if isCompleted {
+                                isShowingCancelConfirmation = true
+                            } else {
+                                dismiss()
+                            }
                         
+                        } label: {
+                            Image(systemName: "xmark")
+                                .frame(width: 40, height: 40)
+                                .foregroundStyle(.red)
+                                .font(.system(size: 20))
+                                .background(
+                                    Circle().foregroundStyle(Color.init(.systemBackground))
+                                )
+                    
+                        }
+                        .padding(.trailing, 0)
+                        .padding(.top, -20)
+                        .confirmationDialog("작성 취소", isPresented: $isShowingCancelConfirmation) {
+                            Button("작성 그만하기", role: .destructive) {
+                                dismiss()
+                            }
+                        } message: {
+                            Text("작성 중이신 습관을 취소하시겠습니까?")
+                        }
+
                     }
+                    
+                    //Divider()
+                    
+                    ScrollView(.vertical, showsIndicators: false) {
+                        VStack(spacing: 20) {
+                            actionSection
+                            triggerSection
+                            
+                        }
+                    }
+                    Color.init(uiColor: .secondarySystemBackground).frame(height: 54)
+                        .padding(.top, 12)
+                    
                 }
-                Color.init(uiColor: .secondarySystemBackground).frame(height: 54)
-                    .padding(.top, 12)
+                .padding(.horizontal, 12)
+                .background(
+                    Color(uiColor: .secondarySystemBackground)
+                )
                 
+                PrimaryButton(title: "저장하기", isEnabled: isCompleted) {
+                    print("저장됨")
+                }
             }
-            .padding(.horizontal, 12)
-            .background(
-                Color(uiColor: .secondarySystemBackground)
-            )
-            
-            PrimaryButton(title: "저장하기", isEnabled: isCompleted) {
-                print("저장됨")
-            }
-        }
-        .ignoresSafeArea(.keyboard)
-        
+            .ignoresSafeArea(.keyboard)
     }
     
     private var actionSection: some View {
