@@ -77,28 +77,9 @@ struct CreateHabitView: View {
                 Color(uiColor: .secondarySystemBackground)
             )
             
-            Button {
-                // 저장 로직 (SwiftData 저장 등)
-                print("습관 저장됨!")
-            } label: {
-                Text("저장하기")
-                    .font(.system(size: 18, weight: .bold, design: .monospaced))
-                    .hSpacing(.center)
-                    .frame(height: 54) // 조금 더 터치하기 편한 높이
-                    .foregroundStyle(isCompleted ? .white : .secondary)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(isCompleted ? Color.accentColor : Color.gray.opacity(0.15))
-                    )
-                
+            PrimaryButton(title: "저장하기", isEnabled: isCompleted) {
+                print("저장됨")
             }
-            .background(
-                Color(uiColor: .secondarySystemBackground)
-            )
-            .padding(.horizontal, 12)
-            .padding(.bottom, 8)
-            .disabled(!isCompleted)
-            .animation(.easeInOut, value: isCompleted)
         }
         .ignoresSafeArea(.keyboard)
         
