@@ -16,6 +16,14 @@ struct CreateHabitView: View {
     
     @FocusState private var isTextFieldFocused: Bool
     
+    var isCompleted: Bool {
+        
+        let isHabitSet = !customHabit.trimmingCharacters(in: .whitespaces).isEmpty || selectedHabit != nil
+        let isTriggerSet = selectedTrigger != nil
+        
+        return isHabitSet && isTriggerSet
+    }
+    
     // 추천 습관 데이터
     private let recommendedHabits: [(icon: String, title: String)] = [
         // 🧠 정신
@@ -46,20 +54,53 @@ struct CreateHabitView: View {
     ]
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HeaderView(title: "습관 만들기", subTitle: "2026년 3월 30일")
-            
-            Divider()
-            
-            ScrollView(.vertical, showsIndicators: false) {
-                actionSection
-                triggerSection
+        
+        ZStack(alignment: .bottom) {
+            VStack(alignment: .leading, spacing: 12) {
+                HeaderView(title: "습관 만들기", subTitle: "2026년 3월 30일")
+                
+                Divider()
+                
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 20) {
+                        actionSection
+                        triggerSection
+                        
+                    }
+                }
+                Color.init(uiColor: .secondarySystemBackground).frame(height: 54)
+                    .padding(.top, 12)
+                
             }
+            .padding(.horizontal, 12)
+            .background(
+                Color(uiColor: .secondarySystemBackground)
+            )
+            
+            Button {
+                // 저장 로직 (SwiftData 저장 등)
+                print("습관 저장됨!")
+            } label: {
+                Text("저장하기")
+                    .font(.system(size: 18, weight: .bold, design: .monospaced))
+                    .hSpacing(.center)
+                    .frame(height: 54) // 조금 더 터치하기 편한 높이
+                    .foregroundStyle(isCompleted ? .white : .secondary)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(isCompleted ? Color.accentColor : Color.gray.opacity(0.15))
+                    )
+                
+            }
+            .background(
+                Color(uiColor: .secondarySystemBackground)
+            )
+            .padding(.horizontal, 12)
+            .padding(.bottom, 8)
+            .disabled(!isCompleted)
+            .animation(.easeInOut, value: isCompleted)
         }
-        .padding(.horizontal, 8)
-        .background(
-            Color(uiColor: .secondarySystemBackground)
-        )
+        .ignoresSafeArea(.keyboard)
         
     }
     
@@ -130,7 +171,7 @@ struct CreateHabitView: View {
                 .padding(.horizontal, 10)
         }
     }
-
+    
     
     private var recommendedArea: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -239,7 +280,7 @@ struct CreateHabitView: View {
                     }
                 }
                 .padding(.vertical, 6)
-                //.padding(.horizontal, 10)
+                .padding(.horizontal, 10)
             }
         }
     }
@@ -260,7 +301,7 @@ struct CreateHabitView: View {
             HStack(spacing: 8) {
                 Text(title)
                     .font(.system(size: 14, weight: isSelected ? .semibold : .regular))
-                    .foregroundStyle(isSelected ? Color.accentColor : .primary)
+                    .foregroundStyle(isSelected ? .primary : .secondary)
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
