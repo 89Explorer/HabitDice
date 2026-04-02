@@ -13,26 +13,35 @@ struct MainView: View {
     @State private var progress = 0.75
     
     var body: some View {
+        
         VStack(alignment: .leading) {
             HeaderView(
                 title: "오늘의 습관",
                 subTitle: currentDate.formatted(date: .abbreviated, time: .omitted)
             )
             
-            todayProcessView()
-                .shadow(
-                    color: Color.gray.opacity(0.25), radius: 3, x: 0, y: 3
-                )
-            
-            availableTriggerView()
-                .shadow(
-                    color: Color.gray.opacity(0.25), radius: 3, x: 0, y: 3
-                )
+            ScrollView(.vertical) {
+                todayProcessView()
+                    .shadow(
+                        color: Color.gray.opacity(0.25), radius: 3, x: 0, y: 3
+                    )
+                
+                availableTriggerView()
+                    .shadow(
+                        color: Color.gray.opacity(0.25), radius: 3, x: 0, y: 3
+                    )
+                
+                weeklyHabitStatus()
+                    .shadow(
+                        color: Color.gray.opacity(0.25), radius: 3, x: 0, y: 3
+                    )
+            }
             
             
         }
         .vSpacing(.top)
         .padding(.horizontal, 12)
+        
     }
     
     
@@ -70,8 +79,8 @@ struct MainView: View {
                 .font(.headline)
             
             triggerCardView(trigger: "양치질을 마쳤을 때", habit: "제자리 걸음 1분 하기", tag: "🔄 일상", isCompleted: true)
-            triggerCardView(trigger: "양치질을 마쳤을 때", habit: "제자리 걸음 1분 하기", tag: "🔄 일상")
-            triggerCardView(trigger: "양치질을 마쳤을 때", habit: "제자리 걸음 1분 하기", tag: "🔄 일상")
+            triggerCardView(trigger: "현관문을 열고 들어왔을 때", habit: "스쿼트 5개 하기", tag: "📍 장소")
+            triggerCardView(trigger: "양치질을 마쳤을 때", habit: "물 1잔 마시기", tag: "🔄 일상")
         }
         .padding(.vertical, 20)
         .padding(.horizontal, 16)
@@ -126,46 +135,80 @@ struct MainView: View {
         )
     }
     
-//    @ViewBuilder
-//    func triggerCardView(trigger: String, habit: String, tag: String) -> some View {
-//        HStack {
-//            VStack(alignment: .leading, spacing: 4) {
-//                Text(tag)
-//                    .font(.caption)
-//                    .foregroundStyle(.primary)
-//                    .padding(8)
-//                    .background(
-//                        RoundedRectangle(cornerRadius: 12)
-//                            .fill(
-//                                Color.accentColor.opacity(0.15)
-//                            )
-//                    )
-//                
-//                Text("\(trigger) \n ➡️ \(habit)")
-//                    .font(.title3)
-//                    .foregroundStyle(.primary)
-//                    .padding(8)
-//                    .lineHeight(.loose)
-//            }
-//            
-//            Spacer()
-//            
-//            Image(systemName: "play.circle.fill")
-//                .font(.title)
-//                .foregroundStyle(Color.accentColor)
-//
-//        }
-//        .padding(.horizontal, 12)
-//        .padding(.vertical, 12)
-//        .background(
-//            RoundedRectangle(cornerRadius: 16)
-//                .fill(
-//                    Color(uiColor: .lightGray.withAlphaComponent(0.15))
-//                )
-//        )
-//
-//    }
+    @ViewBuilder
+    func weeklyHabitStatus() -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            
+            Text("3월 29일 - 4월 4일")
+                .font(.headline)
+            
+            Grid(alignment: .center, horizontalSpacing: 4, verticalSpacing: 8) {
+                
+                GridRow {
+                    Text("")
+                        .gridCellColumns(1)
+                    Spacer()
+                    
+                    ForEach(["일", "월", "화", "수", "목", "금", "토"], id: \.self) { day in
+                        Text(day)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 16)
+                    }
+                }
+                
+                Divider()
+                
+                habitStatusRow(name: "제자리 걸음 100분 하기", status: [false, false, true, false, true, false, false])
+                
+                Divider()
+
+                habitStatusRow(name: "스쿼트 5개 하기", status: [true, true, false, true, false, false, false])
+                
+                Divider()
+                
+                habitStatusRow(name: "물 1잔 마시기", status: [false, true, false, true, false, false, false])
+                
+            }
+        }
+        .padding(.vertical, 20)
+        .padding(.horizontal, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .fill(
+                    Color(uiColor: .systemBackground)
+                )
+        )
+    }
     
+    
+    @ViewBuilder
+    func habitStatusRow(name: String, status: [Bool]) -> some View {
+        GridRow {
+            
+            Text(name)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .gridColumnAlignment(.leading)
+            
+            Spacer()
+                .gridCellUnsizedAxes(.horizontal)
+            
+            ForEach(status.indices, id: \.self) { index in
+                
+                let done = status[index]
+                
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(done ? Color.accentColor.opacity(0.5) : Color.clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4)
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+                    .frame(width: 16, height: 16)
+            }
+            
+        }
+    }
 }
 
 #Preview {
