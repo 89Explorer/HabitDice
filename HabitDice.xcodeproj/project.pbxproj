@@ -187,11 +187,12 @@
 				};
 			};
 			buildConfigurationList = AF80DF0A2F78C78F000742D9 /* Build configuration list for PBXProject "HabitDice" */;
-			developmentRegion = en;
+			developmentRegion = ko;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
+				ko,
 			);
 			mainGroup = AF80DF062F78C78F000742D9;
 			minimizedProjectReferenceProxies = 1;
