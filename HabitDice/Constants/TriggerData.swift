@@ -10,7 +10,7 @@ import Foundation
 
 let recommendedTriggers: [Trigger] = [
     Trigger(
-        title: "🔄 일상 고정 루틴",
+        title: "🔄 일상",
         subTitle: "이미 하고 있는 일, 일상의 닻",
         items: [
             "양치질을 마쳤을 때",
@@ -21,7 +21,7 @@ let recommendedTriggers: [Trigger] = [
         ]
     ),
     Trigger(
-        title: "📍 장소 및 환경",
+        title: "📍 장소",
         subTitle: "특정 장소에서, 공간의 신호",
         items: [
             "현관문을 열고 들어왔을 때",
@@ -32,7 +32,7 @@ let recommendedTriggers: [Trigger] = [
         ]
     ),
     Trigger(
-        title: "⏰ 하루의 마디",
+        title: "⏰ 하루",
         subTitle: "시간의 신호, 골든 타임",
         items: [
             "눈을 뜨자마자 (기상 직후)",
@@ -43,7 +43,7 @@ let recommendedTriggers: [Trigger] = [
         ]
     ),
     Trigger(
-        title: "⚡️ 내 몸의 신호",
+        title: "⚡️ 내 몸",
         subTitle: "기분 전환이 필요할 때",
         items: [
             "스마트폰을 목적 없이 켰을 때",
