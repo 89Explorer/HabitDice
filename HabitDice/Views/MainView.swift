@@ -11,6 +11,7 @@ struct MainView: View {
     
     @State private var currentDate: Date = .init()
     @State private var progress = 0.75
+    @State private var isPresentingCreateView: Bool = false
     
     var body: some View {
         
@@ -36,12 +37,28 @@ struct MainView: View {
                         color: Color.gray.opacity(0.25), radius: 3, x: 0, y: 3
                     )
             }
+            .overlay(alignment: .bottomTrailing) {
+                Button {
+                    isPresentingCreateView.toggle()
+                } label: {
+                    Image(systemName: "plus")
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.white)
+                        .frame(width: 55, height: 55)
+                        .background(Color.blue.shadow(.drop(color: .gray.opacity(0.50), radius: 5, x: 5, y: 5)), in: .circle)
+                        
+                }
+                .padding(15)
+                
+            }
+            .fullScreenCover(isPresented: $isPresentingCreateView) {
+                CreateHabitView()
+            }
             
             
         }
         .vSpacing(.top)
         .padding(.horizontal, 12)
-        
     }
     
     
@@ -162,7 +179,7 @@ struct MainView: View {
                 habitStatusRow(name: "제자리 걸음 100분 하기", status: [false, false, true, false, true, false, false])
                 
                 Divider()
-
+                
                 habitStatusRow(name: "스쿼트 5개 하기", status: [true, true, false, true, false, false, false])
                 
                 Divider()
@@ -180,7 +197,6 @@ struct MainView: View {
                 )
         )
     }
-    
     
     @ViewBuilder
     func habitStatusRow(name: String, status: [Bool]) -> some View {
