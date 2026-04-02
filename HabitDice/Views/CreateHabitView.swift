@@ -141,10 +141,11 @@ struct CreateHabitView: View {
             Text("트리거 선택")
                 .font(.system(size: 18, weight: .semibold))
             
-            ForEach(recommendedTriggers) { trigger in
+            ForEach(TriggerData.recommendedTriggers) { trigger in
                 recommendedTriggerArea(trigger: trigger)
             }
         }
+        
         .hSpacing(.leading)
         .padding(.horizontal, 12)
         .padding(.vertical, 12)
@@ -282,7 +283,7 @@ struct CreateHabitView: View {
     }
     
     
-    private func recommendedTriggerArea(trigger: Trigger) -> some View {
+    private func recommendedTriggerArea(trigger: RecommendedTrigger) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             sectionLabel(trigger.title)
             
