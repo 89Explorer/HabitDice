@@ -55,7 +55,6 @@ struct MainView: View {
                 CreateHabitView()
             }
             
-            
         }
         .vSpacing(.top)
         .padding(.horizontal, 12)
