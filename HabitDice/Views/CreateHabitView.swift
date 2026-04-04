@@ -10,8 +10,9 @@ import SwiftUI
 struct CreateHabitView: View {
     
     
-    @State private var customHabit: String = ""
+    @State private var inputHabit: String = ""
     @State private var selectedHabit: String? = nil
+    
     @State private var selectedTrigger: String? = nil
     @State private var isShowingCancelConfirmation: Bool = false
     
@@ -19,41 +20,15 @@ struct CreateHabitView: View {
     @Environment(\.dismiss) private var dismiss
     
     var isCompleted: Bool {
-        
-        let isHabitSet = !customHabit.trimmingCharacters(in: .whitespaces).isEmpty || selectedHabit != nil
-        let isTriggerSet = selectedTrigger != nil
-        
-        return isHabitSet && isTriggerSet
+        !finalHabitTitle.isEmpty && selectedTrigger != nil
     }
     
-    // 추천 습관 데이터
-    private let recommendedHabits: [(icon: String, title: String)] = [
-        // 🧠 정신
-        ("brain.head.profile", "명상 1분 하기"),
-        ("pencil", "감사 1줄 쓰기"),
-        ("target", "오늘 목표 1개 적기"),
-        
-        // 📚 자기계발
-        ("book.fill", "1페이지 읽기"),
-        ("note.text", "짧은 메모 1줄 남기기"),
-        ("headphones", "유익한 콘텐츠 1분 듣기"),
-        
-        // 💪 신체
-        ("figure.walk", "제자리 걸음 1분 하기"),
-        ("figure.strengthtraining.traditional", "스쿼트 5개 하기"),
-        ("figure.walk.treadmill", "달리기 30분 하기"),
-        
-        // 💧 건강
-        ("drop.fill", "물 1잔 마시기"),
-        ("applelogo", "과일 1종류 먹기"),
-        ("moon.stars","야식 먹지 않기"),
-        
-        
-        // 🌙 마무리
-        ("sparkles", "책상 정리 1분 하기"),
-        ("iphone", "SNS 10분만 하기"),
-        ("moon.stars.fill", "오늘 한 일 1줄 기록하기")
-    ]
+    var finalHabitTitle: String {
+        if !inputHabit.trimmingCharacters(in: .whitespaces).isEmpty {
+            return inputHabit
+        }
+        return selectedHabit ?? ""
+    }
     
     var body: some View {
         
@@ -115,6 +90,9 @@ struct CreateHabitView: View {
                 }
             }
             .ignoresSafeArea(.keyboard)
+            .onTapGesture {
+                isTextFieldFocused = false
+            }
     }
     
     private var actionSection: some View {
@@ -155,13 +133,13 @@ struct CreateHabitView: View {
         )
     }
     
-    
     private var directInputArea: some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionLabel("ℹ️ 직접 습관을 입력하거나 추천을 선택해주세요")
             
-            TextField("형성하고 싶은 습관을 입력해주세요 🤔", text: $customHabit, axis: .vertical)
+            TextField("형성하고 싶은 습관을 입력해주세요 🤔", text: $inputHabit)
                 .focused($isTextFieldFocused)
+                .lineLimit(1)
                 .font(.system(size: 14))
                 .padding(.horizontal, 14)
                 .padding(.vertical, 14)
@@ -177,7 +155,10 @@ struct CreateHabitView: View {
                         )
                         .animation(.easeInOut(duration: 0.2), value: isTextFieldFocused)
                 }
-                .onChange(of: customHabit) { oldValue, newValue in
+                .onSubmit {
+                    isTextFieldFocused = false
+                }
+                .onChange(of: inputHabit) { oldValue, newValue in
                     
                     // 직접 입력 시 추천 선택 해제
                     if !newValue.isEmpty { selectedHabit = nil }
@@ -191,21 +172,21 @@ struct CreateHabitView: View {
         VStack(alignment: .leading, spacing: 10) {
             sectionLabel("ℹ️ 이런 습관을 어떠세요?")
             
-            // 3개씩 나누기
-            let chunks = recommendedHabits.chunked(into: 3)
-            
             TabView {
-                ForEach(chunks.indices, id: \.self) { pageIndex in
+                ForEach(HabitData.Category.allCases, id: \.self) { category in
                     VStack(spacing: 10) {
-                        ForEach(chunks[pageIndex], id: \.title) { habit in
+                        
+                        let filteredHabits = HabitData.allHabits.filter { $0.category == category }
+                        
+                        ForEach(filteredHabits) { habit in
                             recommendedCard(habit)
-                                .padding(.horizontal , 10)
+                                .padding(.horizontal, 10)
                         }
                         
-                        if chunks[pageIndex].count < 3 {
-                            ForEach(0..<(3 - chunks[pageIndex].count), id: \.self) { _ in Color.clear.frame(height: 60) }
-                        }
+                        
                     }
+                    //.tag(category)
+                 
                 }
                 .padding(.horizontal, 0)
                 .padding(.bottom, 36)
@@ -214,17 +195,20 @@ struct CreateHabitView: View {
             .frame(height: CGFloat(3) * 60 + CGFloat(2) * 10 + 20)
             .tabViewStyle(PageTabViewStyle(indexDisplayMode: .always))
             .onAppear {
-                // 현재 페이지 점의 색상
-                UIPageControl.appearance().currentPageIndicatorTintColor = .systemBlue
-                // 나머지 페이지 점의 색상
-                UIPageControl.appearance().pageIndicatorTintColor = UIColor.systemBlue.withAlphaComponent(0.3)
+                setupPageControlAppearance()
             }
         }
     }
     
+    // 외부에 따로 빼두면 깔끔합니다.
+    private func setupPageControlAppearance() {
+        UIPageControl.appearance().currentPageIndicatorTintColor = .systemBlue
+        UIPageControl.appearance().pageIndicatorTintColor = UIColor.systemBlue.withAlphaComponent(0.3)
+    }
+    
     
     // 추천 습관
-    private func recommendedCard(_ habit: (icon: String, title: String)) -> some View {
+    private func recommendedCard(_ habit: HabitData.RecommendedHabit) -> some View {
         
         let isSelected = selectedHabit == habit.title
         
@@ -234,7 +218,7 @@ struct CreateHabitView: View {
                     selectedHabit = nil
                 } else {
                     selectedHabit = habit.title
-                    customHabit = ""
+                    inputHabit = ""
                     isTextFieldFocused = false
                 }
             }
@@ -309,6 +293,7 @@ struct CreateHabitView: View {
                     selectedTrigger = nil
                 } else {
                     selectedTrigger = title
+                    isTextFieldFocused = false     // 입력 텍스트필드 닫기
                 }
             }
         } label: {
@@ -354,7 +339,6 @@ struct CreateHabitView: View {
 #Preview("Flow - ContentView") {
     ContentView()
 }
-
 
 #Preview("Recommend Card Test") {
     
