@@ -6,6 +6,11 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		AF9307812F83BAB500BBED82 /* MCEmojiPicker in Frameworks */ = {isa = PBXBuildFile; productRef = AF9307802F83BAB500BBED82 /* MCEmojiPicker */; };
+		AF9307832F83BAB500BBED82 /* MCEmojiPickerJSON in Frameworks */ = {isa = PBXBuildFile; productRef = AF9307822F83BAB500BBED82 /* MCEmojiPickerJSON */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		AF80DF1D2F78C790000742D9 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -52,6 +57,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AF9307812F83BAB500BBED82 /* MCEmojiPicker in Frameworks */,
+				AF9307832F83BAB500BBED82 /* MCEmojiPickerJSON in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -112,6 +119,8 @@
 			);
 			name = HabitDice;
 			packageProductDependencies = (
+				AF9307802F83BAB500BBED82 /* MCEmojiPicker */,
+				AF9307822F83BAB500BBED82 /* MCEmojiPickerJSON */,
 			);
 			productName = HabitDice;
 			productReference = AF80DF0F2F78C78F000742D9 /* HabitDice.app */;
@@ -190,12 +199,14 @@
 			developmentRegion = ko;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				en,
 				Base,
 				ko,
 			);
 			mainGroup = AF80DF062F78C78F000742D9;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				AF93077F2F83BAB500BBED82 /* XCRemoteSwiftPackageReference "MCEmojiPicker" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = AF80DF102F78C78F000742D9 /* Products */;
 			projectDirPath = "";
@@ -589,6 +600,30 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		AF93077F2F83BAB500BBED82 /* XCRemoteSwiftPackageReference "MCEmojiPicker" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Jeanno/MCEmojiPicker";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		AF9307802F83BAB500BBED82 /* MCEmojiPicker */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AF93077F2F83BAB500BBED82 /* XCRemoteSwiftPackageReference "MCEmojiPicker" */;
+			productName = MCEmojiPicker;
+		};
+		AF9307822F83BAB500BBED82 /* MCEmojiPickerJSON */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = AF93077F2F83BAB500BBED82 /* XCRemoteSwiftPackageReference "MCEmojiPicker" */;
+			productName = MCEmojiPickerJSON;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = AF80DF072F78C78F000742D9 /* Project object */;
 }

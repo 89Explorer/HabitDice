@@ -6,9 +6,377 @@
 //
 
 import SwiftUI
+import SwiftData
+
+
+enum Field {
+    case habit, trigger
+}
+
 
 struct CreateHabitView: View {
     
+    @State private var inputHabit: String = ""
+    @State private var selectedHabit: HabitData.RecommendedHabit? = nil
+    @State private var habitCategory: HabitData.habitCategory = .mental
+    
+    @State private var inputTrigger: String = ""
+    @State private var selectedTrigger: TriggerData.RecommendedTrigger? = nil
+    @State private var triggerCategroy: TriggerData.TriggerCategory = .routine
+    
+    @State private var isShowingCancelConfirmation: Bool = false
+    
+    @FocusState private var isTextFieldFocused: Field?
+    
+    @Environment(\.dismiss) private var dismiss
+    @Environment(HabitRepository.self) var habitRepository
+    
+    
+    var finalHabitTitle: String {
+        if !inputHabit.trimmingCharacters(in: .whitespaces).isEmpty {
+            return inputHabit
+        }
+        return selectedHabit?.title ?? ""
+    }
+    
+    var finalTriggerTitle: String {
+        if !inputTrigger.trimmingCharacters(in: .whitespaces).isEmpty {
+            return inputTrigger
+        }
+        return selectedTrigger?.title ?? ""
+    }
+    
+    var isCompleted: Bool {
+        !finalHabitTitle.isEmpty || !finalTriggerTitle.isEmpty
+    }
+    
+    private var filteredHabits: [HabitData.RecommendedHabit] {
+        HabitData.options(for: habitCategory)
+    }
+    
+    private var filteredTriggers: [TriggerData.RecommendedTrigger] {
+        TriggerData.options(for: triggerCategroy)
+    }
+    
+    var body: some View {
+        NavigationStack {
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 20) {
+                    actionSection
+                        .padding(.top, 20)
+                    triggerSection
+                        
+                }
+                
+            }
+            .navigationTitle("습관 만들기")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(role: .cancel) {
+                        if isCompleted {
+                            isShowingCancelConfirmation = true
+                        } else {
+                            dismiss()
+                        }
+                    } label: {
+                        Image(systemName: "xmark")
+                    }
+                    .confirmationDialog("작성 취소", isPresented: $isShowingCancelConfirmation) {
+                        Button("작성 취소", role: .destructive) {
+                            dismiss()
+                        }
+                    } message: {
+                        Text("작성 중인 습관을 취소하시겠습니까?")
+                    }
+
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(role: .confirm) {
+
+                        let newHabit = Habit(title: finalHabitTitle, createdAt: .now, triggerAction: finalTriggerTitle, groupName: triggerCategroy.rawValue)
+                        habitRepository.context.insert(newHabit)
+                        
+                        do {
+                            try habitRepository.context.save()
+                        } catch {
+                            
+                        }
+                        
+                    } label: {
+                        Image(systemName: "checkmark")
+                    }
+
+                }
+            }
+            .background(Color(.secondarySystemBackground))
+            .onTapGesture {
+                isTextFieldFocused = nil
+            }
+            
+        }
+    }
+    
+    
+    // 행동 선택 섹션
+    private var actionSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionLabel("습관 선택")
+                .hSpacing(.leading)
+                .padding(.horizontal, 24)
+            
+            TextField("습관을 입력하세요 😙 ", text: $inputHabit)
+                .id("TOP")
+                .focused($isTextFieldFocused, equals: .habit)
+                .font(.system(size: 18))
+                .lineLimit(1)
+                .padding(24)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(
+                            Color.init(uiColor: .systemBackground)
+                        )
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(
+                            isTextFieldFocused == .habit ? Color.accentColor.opacity(0.6) : Color.clear, lineWidth: isTextFieldFocused == .habit ? 1.5 : 0
+                        )
+                        .animation(.easeInOut(duration: 0.2), value: isTextFieldFocused)
+                }
+                .onSubmit {
+                    isTextFieldFocused = .trigger
+                }
+                .onChange(of: inputHabit) { oldValue, newValue in
+                    
+                    // 직접 입력 시 추천 선택 해제
+                    if !newValue.isEmpty { selectedHabit = nil }
+                }
+                .padding(.horizontal, 32)
+            
+            
+            sectionLabel("추천 습관")
+                .hSpacing(.leading)
+                .padding(.horizontal, 24)
+            
+            // 카테고리 선택 섹션
+            Picker("카테고리", selection: $habitCategory) {
+                ForEach(HabitData.habitCategory.allCases, id: \.self) {
+                    Text($0.rawValue)
+                        .tag($0)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 24)
+            
+            VStack(spacing: 8) {
+                ForEach(filteredHabits) { habit in
+                    habitCard(habit)
+                }
+            }
+            .padding(.horizontal, 32)
+            
+        }
+    }
+    
+    
+    private func habitCard(_ habit: HabitData.RecommendedHabit) -> some View {
+        let isSelected = selectedHabit?.id == habit.id
+        
+        return Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                if isSelected {
+                    selectedHabit = nil
+                } else {
+                    selectedHabit = habit
+                    inputHabit = ""
+                    isTextFieldFocused = .trigger
+                }
+            }
+            
+        } label: {
+            HStack(spacing: 12) {
+                Text(habit.emoji)
+                    .font(.system(size: 20))
+                
+                Text(habit.title)
+                    .font(.system(size: 18, weight: isSelected ? .bold : .semibold))
+                    .foregroundStyle(isSelected ? Color.black : .secondary)
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(
+                                    Color.accentColor
+                                )
+                        )
+                } else {
+                    Color.clear.frame(width: 32, height: 32)
+                }
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal,24)
+            
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(
+                        isSelected ? Color.accentColor.opacity(0.08) : Color(.systemBackground)
+                    )
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(
+                        isSelected ? Color.accentColor.opacity(0.4) : Color.clear,
+                        lineWidth: 1.5
+                    )
+            }
+        }
+        .buttonStyle(.plain)
+        
+    }
+    
+    private var triggerSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionLabel("습관 트리거 선택")
+                .hSpacing(.leading)
+                .padding(.horizontal, 24)
+        
+            TextField("습관 트리거를 입력하세요 😙 ", text: $inputTrigger)
+                .id("TRIGGER")
+                .focused($isTextFieldFocused, equals: .trigger)
+                .font(.system(size: 18))
+                .lineLimit(1)
+                .padding(24)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(
+                            Color.init(uiColor: .systemBackground)
+                        )
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(
+                            isTextFieldFocused == .trigger ? Color.accentColor.opacity(0.6) : Color.clear, lineWidth: isTextFieldFocused == .trigger ? 1.5 : 0
+                        )
+                        .animation(.easeInOut(duration: 0.2), value: isTextFieldFocused)
+                }
+                .onSubmit {
+                    isTextFieldFocused = nil
+                }
+                .onChange(of: inputTrigger) { oldValue, newValue in
+                    
+                    // 직접 입력 시 추천 선택 해제
+                    if !newValue.isEmpty { selectedTrigger = nil }
+                }
+                .padding(.horizontal, 32)
+            
+            Picker("카테고리", selection: $triggerCategroy) {
+                ForEach(TriggerData.TriggerCategory.allCases, id: \.self) {
+                    Text($0.rawValue)
+                        .tag($0)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 24)
+            
+            sectionLabel("추천 습관 트리거")
+                .hSpacing(.leading)
+                .padding(.horizontal, 24)
+            
+
+            VStack(spacing: 8) {
+                ForEach(filteredTriggers) { trigger in
+                    triggerCard(trigger)
+                }
+            }
+            .padding(.horizontal, 32)
+        }
+    }
+    
+    private func triggerCard(_ trigger: TriggerData.RecommendedTrigger) -> some View {
+        let isSelected = selectedTrigger?.id == trigger.id
+        
+        return Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                if isSelected {
+                    selectedTrigger = nil
+                } else {
+                    selectedTrigger = trigger
+                    inputTrigger = ""
+                    isTextFieldFocused = nil
+                }
+            }
+            
+        } label: {
+            HStack(spacing: 12) {
+                
+                Text(trigger.title)
+                    .font(.system(size: 18, weight: isSelected ? .bold : .semibold))
+                    .foregroundStyle(isSelected ? Color.black : .secondary)
+                
+                Spacer()
+                
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(
+                                    Color.accentColor
+                                )
+                        )
+                } else {
+                    Color.clear.frame(width: 32, height: 32)
+                }
+            }
+            .padding(.vertical, 12)
+            .padding(.horizontal,24)
+            
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(
+                        isSelected ? Color.accentColor.opacity(0.08) : Color(.systemBackground)
+                    )
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(
+                        isSelected ? Color.accentColor.opacity(0.4) : Color.clear,
+                        lineWidth: 1.5
+                    )
+            }
+        }
+        .buttonStyle(.plain)
+        
+    }
+    
+    
+    private func scrollToFocusedField(proxy: ScrollViewProxy) {
+        withAnimation {
+            proxy.scrollTo("TRIGGER", anchor: .bottom)
+        }
+    }
+    
+    
+    // MARK: - 섹션 헤더 사용 목적
+    private func sectionLabel(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 18, weight: .bold))
+            .foregroundStyle(.secondary)
+    }
+}
+
+
+/*
+struct CreateHabitView: View {
     
     @State private var inputHabit: String = ""
     @State private var selectedHabit: String? = nil
@@ -18,6 +386,7 @@ struct CreateHabitView: View {
     
     @FocusState private var isTextFieldFocused: Bool
     @Environment(\.dismiss) private var dismiss
+    @Environment(HabitRepository.self) var habitRepository
     
     var isCompleted: Bool {
         !finalHabitTitle.isEmpty && selectedTrigger != nil
@@ -33,6 +402,7 @@ struct CreateHabitView: View {
     var body: some View {
         
             ZStack(alignment: .bottom) {
+                
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         HeaderView(title: "습관 만들기", subTitle: "2026년 3월 30일")
@@ -76,8 +446,10 @@ struct CreateHabitView: View {
                             
                         }
                     }
+                    
                     Color.init(uiColor: .secondarySystemBackground).frame(height: 54)
                         .padding(.top, 12)
+                    
                     
                 }
                 .padding(.horizontal, 12)
@@ -86,7 +458,13 @@ struct CreateHabitView: View {
                 )
                 
                 PrimaryButton(title: "저장하기", isEnabled: isCompleted) {
-                    print("저장됨")
+                    let newHabit = Habit(title: finalHabitTitle, triggerAction: selectedTrigger)
+                    habitRepository.context.insert(newHabit)
+                    do {
+                        try habitRepository.context.save()
+                    } catch {
+                        
+                    }
                 }
             }
             .ignoresSafeArea(.keyboard)
@@ -106,10 +484,10 @@ struct CreateHabitView: View {
             
         }
         .hSpacing(.leading)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 20)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 24)
                 .fill(Color(uiColor: .systemBackground))
         )
     }
@@ -125,10 +503,10 @@ struct CreateHabitView: View {
         }
         
         .hSpacing(.leading)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 20)
         .background(
-            RoundedRectangle(cornerRadius: 12)
+            RoundedRectangle(cornerRadius: 24)
                 .fill(Color(uiColor: .systemBackground))
         )
     }
@@ -163,10 +541,9 @@ struct CreateHabitView: View {
                     // 직접 입력 시 추천 선택 해제
                     if !newValue.isEmpty { selectedHabit = nil }
                 }
-                .padding(.horizontal, 10)
+                .padding(.horizontal, 20)
         }
     }
-    
     
     private var recommendedArea: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -180,15 +557,14 @@ struct CreateHabitView: View {
                         
                         ForEach(filteredHabits) { habit in
                             recommendedCard(habit)
-                                .padding(.horizontal, 10)
                         }
                         
-                        
                     }
+                    // 추후 카테고리 탭(Segmented Picker)를 추가할 떄 사용 예정 
                     //.tag(category)
                  
                 }
-                .padding(.horizontal, 0)
+                .padding(.horizontal, 20)
                 .padding(.bottom, 36)
                 
             }
@@ -200,12 +576,11 @@ struct CreateHabitView: View {
         }
     }
     
-    // 외부에 따로 빼두면 깔끔합니다.
+    // 추천 습관 하단에 보이는 인디케이터 설정 (recommendedArea에서 사용)
     private func setupPageControlAppearance() {
         UIPageControl.appearance().currentPageIndicatorTintColor = .systemBlue
         UIPageControl.appearance().pageIndicatorTintColor = UIColor.systemBlue.withAlphaComponent(0.3)
     }
-    
     
     // 추천 습관
     private func recommendedCard(_ habit: HabitData.RecommendedHabit) -> some View {
@@ -228,7 +603,7 @@ struct CreateHabitView: View {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(isSelected ? Color.accentColor : Color(.systemGray5))
                         .frame(width: 36, height: 36)
-                    Image(systemName: habit.icon)
+                    Image(systemName: habit.emoji)
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(isSelected ? .white : .secondary)
                 }
@@ -266,9 +641,8 @@ struct CreateHabitView: View {
         .buttonStyle(.plain)
     }
     
-    
     private func recommendedTriggerArea(trigger: RecommendedTrigger) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 6) {
             sectionLabel(trigger.title)
             
             ScrollView(.horizontal, showsIndicators: false) {
@@ -278,7 +652,7 @@ struct CreateHabitView: View {
                     }
                 }
                 .padding(.vertical, 6)
-                .padding(.horizontal, 10)
+                .padding(.horizontal, 20)
             }
         }
     }
@@ -331,88 +705,21 @@ struct CreateHabitView: View {
     }
     
 }
+ 
+ */
 
 #Preview("CreateHabitView Only") {
-    CreateHabitView()
-}
-
-#Preview("Flow - ContentView") {
-    ContentView()
-}
-
-#Preview("Recommend Card Test") {
     
-    struct PreviewWrapper: View {
-        @State private var selectedHabit: String? = "물 마시기"
-        @State private var customHabit: String = ""
-        @FocusState private var isTextFieldFocused: Bool
-        
-        var body: some View {
-            VStack(spacing: 20) {
-                // 선택되지 않은 상태
-                recommendedCardPreview(icon: "leaf.fill", title: "명상하기")
-                
-                // 선택된 상태
-                recommendedCardPreview(icon: "drop.fill", title: "물 마시기")
-            }
-            .padding()
-            .background(Color(.systemBackground))
-        }
-        
-        private func recommendedCardPreview(icon: String, title: String) -> some View {
-            
-            let habit = (icon: icon, title: title)
-            let isSelected = selectedHabit == habit.title
-            
-            return Button {
-                withAnimation(.easeInOut(duration: 0.15)) {
-                    if isSelected {
-                        selectedHabit = nil
-                    } else {
-                        selectedHabit = habit.title
-                        customHabit = ""
-                        isTextFieldFocused = false
-                    }
-                }
-            } label: {
-                HStack(spacing: 12) {
-                    ZStack {
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(isSelected ? Color.accentColor : Color(.systemGray5))
-                            .frame(width: 36, height: 36)
-                        Image(systemName: habit.icon)
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(isSelected ? .white : .secondary)
-                    }
-                    
-                    Text(habit.title)
-                        .font(.system(size: 15, weight: isSelected ? .bold : .regular))
-                    
-                    Spacer()
-                    
-                    if isSelected {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(Color.accentColor)
-                            .transition(.scale.combined(with: .opacity))
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(isSelected ? Color.accentColor.opacity(0.08) : Color(.systemGray6))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(isSelected ? Color.accentColor.opacity(0.4) : Color.clear, lineWidth: 1.5)
-                )
-            }
-            .buttonStyle(.plain)
-        }
+    let habitRepository = HabitRepository(isInMemoryOnly: true)
+    
+    NavigationStack {
+        CreateHabitView()
+            .environment(habitRepository)
+            .modelContainer(habitRepository.modelContainer)
     }
-    
-    return PreviewWrapper()
-    
 }
+
+
+
 
 

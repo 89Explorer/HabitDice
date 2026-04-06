@@ -51,11 +51,11 @@ final class HabitLog {
 
 
 // 트리거 구조체
-struct RecommendedTrigger: Identifiable {
-    let id = UUID()
-    let title: String          // 예: "🔄 일상 고정 루틴"
-    let subTitle: String       // 예: "이미 하고 있는 일, 일상의 닻(Anchor)"
-    let items: [String]
-}
+//struct RecommendedTrigger: Identifiable {
+//    let id = UUID()
+//    let title: String          // 예: "🔄 일상 고정 루틴"
+//    let subTitle: String       // 예: "이미 하고 있는 일, 일상의 닻(Anchor)"
+//    let items: [String]
+//}
 
 

@@ -52,7 +52,8 @@ struct MainView: View {
                 
             }
             .fullScreenCover(isPresented: $isPresentingCreateView) {
-                CreateHabitView()
+                    //CreateHabitView()
+                HabitCreateContainerView()
             }
             
         }

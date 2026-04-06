@@ -19,20 +19,20 @@ struct PrimaryButton: View {
             Text(title)
                 .font(.system(size: 18, weight: .bold, design: .monospaced))
                 .hSpacing(.center)
-                .frame(height: 54) // 조금 더 터치하기 편한 높이
+                .frame(height: 60) // 조금 더 터치하기 편한 높이
                 .foregroundStyle(isEnabled ? .white : .secondary)
                 .background(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: 20)
                         .fill(isEnabled ? Color.accentColor : Color.gray.opacity(0.15))
                 )
         }
         .background(
             Color(uiColor: .secondarySystemBackground)
         )
-        .padding(.horizontal, 12)
-        .padding(.bottom, 8)
+        //.padding(.horizontal, 12)
+        //.padding(.bottom, 8)
         .disabled(!isEnabled)
-        .animation(.easeInOut, value: isEnabled)
+        //.animation(.easeInOut, value: isEnabled)
     }
 }
 
