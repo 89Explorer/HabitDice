@@ -44,7 +44,12 @@ struct HabitCreateContainerView: View {
                         HabitSelectView(currentStep: $currentStep, selectedHabit: $selectedHabit, habitEmoji: $selectedEmoji)
                             .tag(HabitCreateStep.habit)
                         
-                        TriggerSelectView(currentStep: $currentStep, selectedTrigger: $selectedTrigger)
+                        TriggerSelectView(
+                            currentStep: $currentStep,
+                            selectedTrigger: $selectedTrigger,
+                            currentHabitTitle: $selectedHabit,
+                            currentHabitEmoji: $selectedEmoji
+                        )
                             .tag(HabitCreateStep.trigger)
                         
                         OptionSelectView(currentStep: $currentStep)
@@ -92,8 +97,7 @@ struct HabitCreateContainerView: View {
             
         }
     }
-    
-    
+
     private var backButton: some View {
         Button {
             if currentStep == .habit {

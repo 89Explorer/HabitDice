@@ -71,11 +71,6 @@ struct HabitSelectView: View {
                         recommendHabitSection
                         
                     }
-                    
-                    .onTapGesture {
-                        isTextFieldFocused = false
-                    }
-                    
                 }
                 
                 PrimaryButton(title: "다음", isEnabled: isCompleted) {
@@ -85,16 +80,12 @@ struct HabitSelectView: View {
                 }
             }
             .padding(.horizontal, 24)
-            .padding(.bottom, 24)
+            .padding(.bottom, 20)
         }
-        .emojiPicker(
-            isPresented: $isEmojiPickerPresented,
-            selectedEmoji: $inputHabitEmoji,
-            customHeight: 650.0,
-            isDismissAfterChoosing: true,
-            selectedEmojiCategoryTintColor: .black,
-            feedBackGeneratorStyle: .heavy
-        )
+        .onTapGesture {
+            isTextFieldFocused = false
+        }
+        
     }
     
     
@@ -124,6 +115,14 @@ struct HabitSelectView: View {
                                 .stroke(Color.secondary.opacity(0.2), lineWidth: 1)
                         )
                 }
+                .emojiPicker(
+                    isPresented: $isEmojiPickerPresented,
+                    selectedEmoji: $inputHabitEmoji,
+                    customHeight: 650.0,
+                    isDismissAfterChoosing: true,
+                    selectedEmojiCategoryTintColor: .black,
+                    feedBackGeneratorStyle: .heavy
+                )
 
                 TextField("예: 아침 뉴스 보기 😙", text: $inputHabit )
                     .focused($isTextFieldFocused)
@@ -172,7 +171,7 @@ struct HabitSelectView: View {
             }
             .pickerStyle(.segmented)
             
-            VStack(spacing: 16) {
+            VStack(spacing: 8) {
                 ForEach(filteredHabits) { habit in
                     habitCard(habit)
                         .padding(4)
@@ -188,7 +187,7 @@ struct HabitSelectView: View {
         let isSelected = recommendedHabit?.id == habit.id
         
         return Button {
-            withAnimation(.easeInOut(duration: 0.4)) {
+            withAnimation(.snappy(duration: 0.4)) {
                 if isSelected {
                     recommendedHabit = nil
                 } else {
@@ -213,6 +212,7 @@ struct HabitSelectView: View {
                 
                 if isSelected {
                     Image(systemName: "checkmark")
+                        .animation(.snappy(duration: 0.4))
                         .font(.system(size: 18))
                         .foregroundStyle(Color(.white))
                         .frame(width: 32, height: 32)
