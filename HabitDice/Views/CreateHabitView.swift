@@ -13,7 +13,7 @@ enum Field {
     case habit, trigger
 }
 
-
+/*
 struct CreateHabitView: View {
     
     @State private var inputHabit: String = ""
@@ -718,7 +718,7 @@ struct CreateHabitView: View {
             .modelContainer(habitRepository.modelContainer)
     }
 }
-
+*/
 
 
 

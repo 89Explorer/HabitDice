@@ -19,12 +19,17 @@ struct HabitCreateContainerView: View {
     
     
     // 하위 뷰에서 공유할 데이터
-    @State private var selectedHabit: String = ""
-    @State private var selectedEmoji: String = ""
-    @State private var selectedTrigger: String = ""
-    @State private var selectedRepeatDays: [Int] = []
+    @State private var habit: Habit = Habit(
+        title: "",
+        emoji: "",
+        createdAt: .now,
+        isArchived: false,
+        isRepeatOn: false,
+        repeatDays: [],
+        isAlarmOn: false,
+        logs: []
+    )
     
-
     
     @State private var showExitDialog: Bool = false
     
@@ -41,24 +46,20 @@ struct HabitCreateContainerView: View {
                         .padding(.vertical, 14)
                     
                     TabView(selection: $currentStep) {
-                        HabitSelectView(currentStep: $currentStep, selectedHabit: $selectedHabit, habitEmoji: $selectedEmoji)
+                        HabitSelectView(
+                            habit: habit,
+                            currentStep: $currentStep
+                        )
                             .tag(HabitCreateStep.habit)
                         
                         TriggerSelectView(
-                            currentStep: $currentStep,
-                            selectedTrigger: $selectedTrigger,
-                            currentHabitTitle: $selectedHabit,
-                            currentHabitEmoji: $selectedEmoji
+                            habit: habit,
+                            currentStep: $currentStep
                         )
                             .tag(HabitCreateStep.trigger)
                         
                         OptionSelectView(
-                            currentStep: $currentStep,
-                            selectedHabit: $selectedHabit,
-                            habitEmoji: $selectedEmoji,
-                            selectedTrigger: $selectedTrigger,
-                            selectedRepeatDays: $selectedRepeatDays
-                        )
+                            habit: habit)
                             .tag(HabitCreateStep.option)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))

@@ -30,15 +30,10 @@ enum DayOfWeek: Int, CaseIterable, Identifiable {
 
 struct OptionSelectView: View {
     
-    @Binding var currentStep: HabitCreateStep
-    @Binding var selectedHabit: String
-    @Binding var habitEmoji: String
-    @Binding var selectedTrigger: String
-    @Binding var selectedRepeatDays: [Int]
+    @Bindable var habit: Habit
     
     @State private var isRepeatOn: Bool = false
     @State private var repeatDays: Set<Int> = []
-    @State private var currentRepeatDays: Set<Int> = []
     
     
     var body: some View {
@@ -57,10 +52,20 @@ struct OptionSelectView: View {
                             .foregroundStyle(Color(.label))
                         
                         VStack(alignment: .leading, spacing: 12) {
-                            summaryRow(category: "습관", title: selectedHabit, emoji: habitEmoji)
+                            summaryRow(
+                                category: "습관",
+                                title: habit.title,
+                                emoji: habit.emoji
+                            )
+                            
                             Color.accentColor.opacity(0.2)
                                 .frame(height: 3)
-                            summaryRow(category: "트리거", title: selectedTrigger, emoji: "🔫")
+                            
+                            summaryRow(
+                                category: "트리거",
+                                title: habit.selectedTriggerAction ?? "",
+                                emoji: "🔫"
+                            )
                         }
                         .padding(24)
                         .background(
@@ -79,13 +84,21 @@ struct OptionSelectView: View {
                         .padding(4)
                         
                         repeatDaysView
-
+                        
                     }
                 }
                 
-                PrimaryButton(title: "저장", isEnabled: true) {
-                    let sortedRepeatDays = repeatDays.sorted()
-                    print(sortedRepeatDays)
+                PrimaryButton(title: "저장", isEnabled: true){
+                    saveAction()
+                    print("--- 최종 설정 데이터 ---")
+                    print("타이틀: \(habit.title)")
+                    print("이모지: \(habit.emoji)")
+                    print("반복 여부: \(habit.isRepeatOn)") // [0, 1, 2] 형식
+                    print("반복 요일: \(habit.repeatDays)") // [0, 1, 2] 형식
+                    print("알람 여부: \(habit.isAlarmOn)")
+                    print("알람 시간: \(habit.alarmTime?.description ?? "없음")")
+                    print("트리거: \(habit.selectedTriggerAction ?? "없음")")
+                    print("----------------------")
                 }
             }
             .padding(.horizontal, 24)
@@ -125,6 +138,11 @@ struct OptionSelectView: View {
                     .labelsHidden()
                     .toggleStyle(.switch)
                     .tint(.accentColor)
+                    .onChange(of: isRepeatOn) { oldValue, newValue in
+                        if !newValue {
+                            repeatDays = []
+                        }
+                    }
             }
             
             if isRepeatOn {
@@ -155,7 +173,7 @@ struct OptionSelectView: View {
                     }
                 }
                 //.transition(.opacity.combined(with: .move(edge: .top)))
-                .animation(.easeInOut.delay(0.25), value: isRepeatOn) 
+                .animation(.easeInOut.delay(0.25), value: isRepeatOn)
             }
         }
         .padding(24)
@@ -182,7 +200,8 @@ struct OptionSelectView: View {
     }
     
     private func saveAction() {
-        self.selectedRepeatDays = repeatDays.sorted()
+        self.habit.isRepeatOn = isRepeatOn
+        self.habit.repeatDays = repeatDays.sorted()
     }
 }
 
@@ -190,10 +209,7 @@ struct OptionSelectView: View {
 
 #Preview {
     OptionSelectView(
-        currentStep: .constant(.trigger),
-        selectedHabit: .constant("제자리 걷기"),
-        habitEmoji: .constant("👍"),
-        selectedTrigger: .constant("설거지를 마쳤을 떄"),
-        selectedRepeatDays: .constant([1,2])
+        habit: Habit(title: "양치질", emoji: "👍", createdAt: .now, isArchived: false, isRepeatOn: false, repeatDays: [], isAlarmOn: false, logs: [])
+        
     )
 }

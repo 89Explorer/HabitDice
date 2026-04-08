@@ -11,11 +11,13 @@ import SwiftData
 
 struct TriggerSelectView: View {
     
-    @Binding var currentStep: HabitCreateStep
-    @Binding var selectedTrigger: String
+    @Bindable var habit: Habit
     
-    @Binding var currentHabitTitle: String
-    @Binding var currentHabitEmoji: String
+    @Binding var currentStep: HabitCreateStep
+    
+//    @Binding var selectedTrigger: String
+//    @Binding var currentHabitTitle: String
+//    @Binding var currentHabitEmoji: String
     
     @State private var inputTrigger: String = ""
     @State private var triggerCategroy: TriggerData.TriggerCategory = .routine
@@ -77,8 +79,8 @@ struct TriggerSelectView: View {
                 .foregroundStyle(Color(.label))
             
             HStack(spacing: 12) {
-                Text(currentHabitEmoji)
-                Text(currentHabitTitle)
+                Text(habit.emoji)
+                Text(habit.title)
             }
             .hSpacing(.leading)
             .padding(24)
@@ -215,7 +217,8 @@ struct TriggerSelectView: View {
     }
 
     private func saveAndNext() {
-        self.selectedTrigger = currentDisplayTrigger
+        self.habit.selectedTriggerAction = currentDisplayTrigger
+        
         withAnimation {
             currentStep = .option
             isTextFieldFocused = false
@@ -225,9 +228,6 @@ struct TriggerSelectView: View {
 
 #Preview {
     TriggerSelectView(
-        currentStep: .constant(.option),
-        selectedTrigger: .constant("양치질 마쳤을 때"),
-        currentHabitTitle: .constant("스쿼트 5개"),
-        currentHabitEmoji: .constant("🔫")
+        habit: Habit(title: "양치질", emoji: "👍", createdAt: .now, isArchived: false, isRepeatOn: false, repeatDays: [], isAlarmOn: false, logs: []),currentStep: .constant(.option)
     )
 }

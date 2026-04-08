@@ -10,12 +10,13 @@ import MCEmojiPicker
 
 struct HabitSelectView: View {
     
+    @Bindable var habit: Habit
+    
     
     // MARK: - Property
     @Binding var currentStep: HabitCreateStep
-    @Binding var selectedHabit: String         // 상위 뷰와 연결하는 데이터
-    @Binding var habitEmoji: String
     
+
     @State private var inputHabit: String = ""
     @State private var inputHabitEmoji: String = "🎯"
     
@@ -50,8 +51,8 @@ struct HabitSelectView: View {
     
     // 텍스트 필드 확인
     @FocusState private var isTextFieldFocused: Bool
-    
-    
+
+ 
     // MARK: - Body
     var body: some View {
         
@@ -124,7 +125,7 @@ struct HabitSelectView: View {
                     feedBackGeneratorStyle: .heavy
                 )
 
-                TextField("예: 아침 뉴스 보기 😙", text: $inputHabit )
+                TextField("예: 아침 뉴스 보기 😙", text: $inputHabit)
                     .focused($isTextFieldFocused)
                     .font(.system(size: 18, weight: .bold))
                     .lineLimit(1)
@@ -247,8 +248,8 @@ struct HabitSelectView: View {
     
     
     private func saveAndNext() {
-        self.selectedHabit = currentDisplayTitle
-        self.habitEmoji = currentDisplayEmoji
+        self.habit.title = currentDisplayTitle
+        self.habit.emoji = currentDisplayEmoji
         
         withAnimation {
             currentStep = .trigger
@@ -260,5 +261,8 @@ struct HabitSelectView: View {
 
 
 #Preview {
-    HabitSelectView(currentStep: .constant(.habit), selectedHabit: .constant("물1잔마시기"), habitEmoji: .constant("✅"))
+    HabitSelectView(
+        habit: Habit(title: "양치질", emoji: "👍", createdAt: .now, isArchived: false, isRepeatOn: false, repeatDays: [], isAlarmOn: false, logs: []),
+        currentStep: .constant(.habit)
+    )
 }
