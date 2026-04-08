@@ -82,7 +82,7 @@ struct TriggerSelectView: View {
             }
             .hSpacing(.leading)
             .padding(24)
-            .font(.system(size: 24, weight: .bold))
+            .font(.system(size: 18, weight: .bold))
             .background(
                 RoundedRectangle(cornerRadius: 20)
                     .fill(
@@ -127,7 +127,7 @@ struct TriggerSelectView: View {
                 }
                 .onChange(of: inputTrigger, { oldValue, newValue in
                     if !newValue.isEmpty {
-                        recommendedTrigger = nil 
+                        recommendedTrigger = nil
                     }
                 })
                 .onSubmit {
@@ -139,7 +139,7 @@ struct TriggerSelectView: View {
     
     private var recommendedTriggerSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("👍 추천 트리거")
+            Text("추천 트리거")
                 .font(.system(size: 14))
                 .foregroundStyle(Color(.label))
             Picker("트리거 카테고리", selection: $triggerCategroy){

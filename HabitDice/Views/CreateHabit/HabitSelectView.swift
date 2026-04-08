@@ -159,7 +159,7 @@ struct HabitSelectView: View {
     @ViewBuilder
     private var recommendHabitSection: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("👍 추천 습관")
+            Text("추천 습관")
                 .font(.system(size: 14))
                 .foregroundStyle(Color(.label))
             

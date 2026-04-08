@@ -21,10 +21,10 @@ struct HabitCreateContainerView: View {
     // 하위 뷰에서 공유할 데이터
     @State private var selectedHabit: String = ""
     @State private var selectedEmoji: String = ""
-    
-    
     @State private var selectedTrigger: String = ""
+    @State private var selectedRepeatDays: [Int] = []
     
+
     
     @State private var showExitDialog: Bool = false
     
@@ -52,7 +52,13 @@ struct HabitCreateContainerView: View {
                         )
                             .tag(HabitCreateStep.trigger)
                         
-                        OptionSelectView(currentStep: $currentStep)
+                        OptionSelectView(
+                            currentStep: $currentStep,
+                            selectedHabit: $selectedHabit,
+                            habitEmoji: $selectedEmoji,
+                            selectedTrigger: $selectedTrigger,
+                            selectedRepeatDays: $selectedRepeatDays
+                        )
                             .tag(HabitCreateStep.option)
                     }
                     .tabViewStyle(.page(indexDisplayMode: .never))
