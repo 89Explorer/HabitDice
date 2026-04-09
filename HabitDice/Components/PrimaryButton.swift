@@ -20,14 +20,14 @@ struct PrimaryButton: View {
                 .font(.system(size: 18, weight: .bold, design: .monospaced))
                 .hSpacing(.center)
                 .frame(height: 60) // 조금 더 터치하기 편한 높이
-                .foregroundStyle(isEnabled ? .white : .secondary)
+                .foregroundStyle(isEnabled ? Color(.label) : Color(.secondaryLabel))
                 .background(
                     RoundedRectangle(cornerRadius: 20)
                         .fill(isEnabled ? Color.accentColor : Color.gray.opacity(0.15))
                 )
         }
         .background(
-            Color(uiColor: .secondarySystemBackground)
+            Color(uiColor: .systemBackground)
         )
         //.padding(.horizontal, 12)
         //.padding(.bottom, 8)

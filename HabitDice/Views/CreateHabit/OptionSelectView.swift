@@ -35,6 +35,9 @@ struct OptionSelectView: View {
     @State private var isRepeatOn: Bool = false
     @State private var repeatDays: Set<Int> = []
     
+    @State private var isAlarmOn: Bool = false
+    @State private var alarmData = Date()
+    
     
     var body: some View {
         ZStack {
@@ -42,7 +45,7 @@ struct OptionSelectView: View {
             
             VStack {
                 ScrollView(.vertical, showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 12) {
                         
                         Text("거의 다 됐어요! 🎉")
                             .font(.system(size: 24, weight: .bold))
@@ -84,6 +87,8 @@ struct OptionSelectView: View {
                         .padding(4)
                         
                         repeatDaysView
+                        
+                        timePickerSection
                         
                     }
                 }
@@ -134,7 +139,7 @@ struct OptionSelectView: View {
                 
                 Spacer()
                 
-                Toggle("", isOn: $isRepeatOn)
+                Toggle("", isOn: $isRepeatOn.animation(.easeInOut(duration: 0.25)))
                     .labelsHidden()
                     .toggleStyle(.switch)
                     .tint(.accentColor)
@@ -151,7 +156,7 @@ struct OptionSelectView: View {
                     ForEach(DayOfWeek.allCases) { day in
                         
                         Button {
-                            withAnimation(.snappy) {
+                            withAnimation(.easeInOut) {
                                 if repeatDays.contains(day.rawValue) {
                                     repeatDays.remove(day.rawValue)
                                 } else {
@@ -172,8 +177,8 @@ struct OptionSelectView: View {
                         .buttonStyle(.plain)
                     }
                 }
-                //.transition(.opacity.combined(with: .move(edge: .top)))
-                .animation(.easeInOut.delay(0.25), value: isRepeatOn)
+                .transition(.opacity.combined(with: .move(edge: .top)))
+                //.animation(.easeInOut.delay(0.25), value: isRepeatOn)
             }
         }
         .padding(24)
@@ -194,14 +199,76 @@ struct OptionSelectView: View {
         // move(edge: .top): 위치 이동 (뷰가 나타날 때는 위쪽에서 원래 자리로 내려오면서 등장, 뷰가 사라질때는 반대)
         // combined(with: ): 위의 2가지를 동시에 적용
         //.transition(.opacity.combined(with: .move(edge: .top)))
-        .animation(.easeInOut, value: isRepeatOn)
+        //.animation(.easeInOut, value: isRepeatOn)
         .padding(4)
         
+    }
+    
+    private var timePickerSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("알람")
+                    .font(.system(size: 20))
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color(.label))
+                
+                Spacer()
+                
+                Toggle("", isOn: $isAlarmOn.animation(.easeInOut))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .tint(.accentColor)
+                    .onChange(of: isAlarmOn) { oldValue, newValue in
+                        if !newValue {
+                            alarmData = .now
+                        }
+                    }
+            }
+            
+            if isAlarmOn {
+                HStack {
+                    Spacer()
+                    DatePicker("", selection: $alarmData, displayedComponents: [.hourAndMinute])
+                        .labelsHidden()
+                        .datePickerStyle(.wheel)
+                        .frame(maxWidth: 280)
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                    
+                    Spacer()
+                }
+                .padding(.top, 8)
+            }
+            
+//            if isAlarmOn {
+//                DatePicker("", selection: $alarmData, displayedComponents: [.hourAndMinute])
+//                    .labelsHidden()
+//                    .datePickerStyle(.wheel)
+//                    .transition(.opacity.combined(with: .move(edge: .top)))
+//            }
+        }
+        .padding(24)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(
+                    Color.init(uiColor: .systemBackground)
+                )
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 20)
+                .stroke (
+                    Color.accentColor.opacity(0.4),
+                    lineWidth: 2
+                )
+        }
+        .padding(4)
     }
     
     private func saveAction() {
         self.habit.isRepeatOn = isRepeatOn
         self.habit.repeatDays = repeatDays.sorted()
+        
+        self.habit.isArchived = isAlarmOn
+        self.habit.alarmTime = alarmData
     }
 }
 
