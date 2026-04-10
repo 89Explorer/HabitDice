@@ -357,8 +357,6 @@ struct OptionSelectView: View {
     }
 }
 
-
-
 #Preview {
     
     let container = HabitRepository(isInMemoryOnly: true)

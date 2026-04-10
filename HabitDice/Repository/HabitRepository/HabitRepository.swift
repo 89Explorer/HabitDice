@@ -35,10 +35,6 @@ class HabitRepository {
             modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
             notificationRepository = NotificationRepository(modelContainer: modelContainer)
             
-//            Task {
-//                await notificationRepository.requestNotificationAuth()
-//            }
-            
         } catch {
             
             print("데이터베이스 초기화 실패: \(error.localizedDescription)")

@@ -15,10 +15,6 @@ struct TriggerSelectView: View {
     
     @Binding var currentStep: HabitCreateStep
     
-//    @Binding var selectedTrigger: String
-//    @Binding var currentHabitTitle: String
-//    @Binding var currentHabitEmoji: String
-    
     @State private var inputTrigger: String = ""
     @State private var triggerCategroy: TriggerData.TriggerCategory = .routine
     @State private var recommendedTrigger: TriggerData.RecommendedTrigger? = nil
