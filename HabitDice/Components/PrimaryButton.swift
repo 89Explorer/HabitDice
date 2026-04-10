@@ -23,12 +23,12 @@ struct PrimaryButton: View {
                 .foregroundStyle(isEnabled ? Color(.label) : Color(.secondaryLabel))
                 .background(
                     RoundedRectangle(cornerRadius: 20)
-                        .fill(isEnabled ? Color.accentColor : Color.gray.opacity(0.15))
+                        .fill(isEnabled ? Color(.systemBlue) : Color.gray.opacity(0.15))
                 )
         }
-        .background(
-            Color(uiColor: .systemBackground)
-        )
+//        .background(
+//            Color(uiColor: .systemBackground)
+//        )
         //.padding(.horizontal, 12)
         //.padding(.bottom, 8)
         .disabled(!isEnabled)

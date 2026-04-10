@@ -27,8 +27,9 @@ final class Habit {
     var repeatDays: [Int]  // [0,1,2] -> 일, 월, 화 (정렬된 배열로 저장)
     
     var isAlarmOn: Bool   // 알람 설정 여부
-    var alarmTime: Date?  // 알람 시간 (시간 데이터만)
+    @Relationship(deleteRule: .cascade) var notification: Notification?
     
+    //var alarmTime: Date?  // 알람 시간 (시간 데이터만)
     // 관계 설정
     @Relationship(deleteRule: .cascade, inverse: \HabitLog.habit) var logs: [HabitLog] = []
     
@@ -52,7 +53,6 @@ final class Habit {
         self.isRepeatOn = isRepeatOn
         self.repeatDays = repeatDays
         self.isAlarmOn = isAlarmOn
-        self.alarmTime = alarmTime
         self.logs = logs
             
     }

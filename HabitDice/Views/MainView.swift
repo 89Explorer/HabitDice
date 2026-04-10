@@ -6,12 +6,16 @@
 //
 
 import SwiftUI
+import SwiftData
+
 
 struct MainView: View {
     
     @State private var currentDate: Date = .init()
     @State private var progress = 0.75
     @State private var isPresentingCreateView: Bool = false
+    
+    @Query(sort: \Habit.createdAt) private var habit: [Habit]
     
     var body: some View {
         
@@ -54,6 +58,28 @@ struct MainView: View {
             .fullScreenCover(isPresented: $isPresentingCreateView) {
                     //CreateHabitView()
                 HabitCreateContainerView()
+            }
+            .onAppear {
+//                print("\n📦 [MainView] 전체 습관 데이터 조회를 시작합니다 (총 \(habit.count)개)")
+//                print("---------------------------------------------")
+//                
+//                for (index, item) in habit.enumerated() {
+//                    print("[\(index + 1)] 습관명: \(item.emoji) \(item.title)")
+//                    print("   - 생성일: \(item.createdAt.description)")
+//                    print("   - 반복여부: \(item.isRepeatOn ? "YES" : "NO")")
+//                    print("   - 반복요일: \(item.repeatDays) (1:일 ~ 7:토)")
+//                    print("   - 알람설정: \(item.isAlarmOn ? "ON 🔔" : "OFF 🔕")")
+//                    
+//                    // 관계된 Notification 정보 확인
+//                    if let noti = item.notification {
+//                        print("   - ⏰ 알람시간: \(noti.time.formatted(date: .omitted, time: .shortened))")
+//                        print("   - 🆔 알람ID: \(noti.id)")
+//                    } else {
+//                        print("   - ⏰ 알람 데이터 없음 (nil)")
+//                    }
+//                    print("---------------------------------------------")
+//                }
+                
             }
             
         }

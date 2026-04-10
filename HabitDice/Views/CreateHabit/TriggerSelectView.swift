@@ -22,6 +22,7 @@ struct TriggerSelectView: View {
     @State private var inputTrigger: String = ""
     @State private var triggerCategroy: TriggerData.TriggerCategory = .routine
     @State private var recommendedTrigger: TriggerData.RecommendedTrigger? = nil
+
     
     private var filteredTriggers: [TriggerData.RecommendedTrigger] {
         TriggerData.options(for: triggerCategroy)
