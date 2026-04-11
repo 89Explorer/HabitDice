@@ -26,10 +26,10 @@ struct MainView: View {
             )
             
             ScrollView(.vertical) {
-                todayProcessView()
-                    .shadow(
-                        color: Color.gray.opacity(0.25), radius: 3, x: 0, y: 3
-                    )
+//                todayProcessView()
+//                    .shadow(
+//                        color: Color.gray.opacity(0.25), radius: 3, x: 0, y: 3
+//                    )
                 
                 availableTriggerView()
                     .shadow(
@@ -84,7 +84,7 @@ struct MainView: View {
             
         }
         .vSpacing(.top)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 20)
     }
     
     
@@ -118,17 +118,18 @@ struct MainView: View {
     @ViewBuilder
     func availableTriggerView() -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("지금 가능한 트리거")
+            Text("오늘의 습관")
                 .font(.headline)
+                .fontWeight(.bold)
+                .foregroundStyle(.secondary)
             
             triggerCardView(trigger: "양치질을 마쳤을 때", habit: "제자리 걸음 1분 하기", tag: "🔄 일상", isCompleted: true)
             triggerCardView(trigger: "현관문을 열고 들어왔을 때", habit: "스쿼트 5개 하기", tag: "📍 장소")
             triggerCardView(trigger: "양치질을 마쳤을 때", habit: "물 1잔 마시기", tag: "🔄 일상")
         }
-        .padding(.vertical, 20)
-        .padding(.horizontal, 16)
+        .padding(20)
         .background(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: 20)
                 .fill(
                     Color(uiColor: .systemBackground)
                 )
@@ -141,17 +142,18 @@ struct MainView: View {
             
             VStack(alignment: .leading, spacing: 6) {
                 Text(trigger)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
+                    .font(.subheadline)
+                    .foregroundStyle(Color(.systemBlue))
                 
                 HStack(spacing: 4) {
                     Image(systemName: "arrow.right")
                         .font(.caption2.bold())
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color(.label))
                     Text(habit)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .font(.headline)
+                        .foregroundStyle(Color(.label))
                 }
+                
             }
             
             Spacer()
@@ -167,14 +169,14 @@ struct MainView: View {
                 )
                 .foregroundColor(.accentColor)
         }
-        .padding(.all, 16)
+        .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(isCompleted ? Color.blue.opacity(0.10) : Color(uiColor: .secondarySystemBackground))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(Color.primary.opacity(0.05), lineWidth: 1)
-                )
+            RoundedRectangle(cornerRadius: 20)
+                .fill(isCompleted ? Color(.systemBlue).opacity(0.10) : Color(uiColor: .secondarySystemBackground))
+//                .overlay(
+//                    RoundedRectangle(cornerRadius: 20)
+//                        .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+//                )
         )
     }
     

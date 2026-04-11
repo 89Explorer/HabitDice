@@ -9,10 +9,9 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        MainView()
+        HomeView()
             .frame(maxWidth: .infinity,
                    maxHeight: .infinity)
-            .background(Color(uiColor: .secondarySystemBackground))
     }
 }
 

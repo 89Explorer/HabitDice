@@ -64,6 +64,60 @@ final class Habit {
     
 }
 
+extension Habit {
+    static let sampleData: [Habit] = [
+        Habit(
+            title: "물 2L 마시기",
+            emoji: "💧",
+            createdAt: Date().addingTimeInterval(-86400 * 7), // 7일 전 생성
+            isArchived: false,
+            selectedTriggerAction: "아침에 일어나자마자",
+            isRepeatOn: true,
+            repeatDays: [0, 1, 2, 3, 4, 5, 6], // 매일
+            isAlarmOn: true,
+            logs: []
+        ),
+        
+        Habit(
+            title: "SwiftUI 공부하기",
+            emoji: "💻",
+            createdAt: Date().addingTimeInterval(-86400 * 3), // 3일 전 생성
+            isArchived: false,
+            selectedTriggerAction: "퇴근하고 책상에 앉았을 때",
+            isRepeatOn: true,
+            repeatDays: [1, 2, 3, 4, 5], // 월~금
+            isAlarmOn: true,
+            logs: []
+        ),
+        
+        Habit(
+            title: "헬스장 가기",
+            emoji: "🏋️‍♂️",
+            createdAt: Date().addingTimeInterval(-86400 * 14), // 14일 전 생성
+            isArchived: false,
+            selectedTriggerAction: "운동복으로 갈아입었을 때",
+            isRepeatOn: true,
+            repeatDays: [1, 3, 5], // 월, 수, 금
+            isAlarmOn: false,
+            logs: []
+        ),
+        
+        Habit(
+            title: "독서 10페이지",
+            emoji: "📚",
+            createdAt: Date().addingTimeInterval(-86400 * 5), // 5일 전 생성
+            isArchived: false,
+            selectedTriggerAction: "잠들기 전 침대에 누웠을 때",
+            isRepeatOn: true,
+            repeatDays: [0, 6], // 주말
+            isAlarmOn: true,
+            logs: []
+        )
+        
+    ]
+}
+
+
 
 @Model
 final class HabitLog {
@@ -82,39 +136,28 @@ final class HabitLog {
 }
 
 
-
-//@Model
-//final class Habit {
-//    var title: String       // "물 1잔 마시기"
-//    var createdAt: Date     // 습관을 생성한 날짜
-//    
-//    @Relationship(deleteRule: .cascade) var logs: [HabitLog] = []    // 관계 설정: 하나의 습관을 여러 개의 로그를 가짐 (대신, 습관 삭제하면 기록도 삭제)
-//    
-//    var selectedTriggerAction: String?    // 사용자가 선택한 최종 트리거 문구 (예: 양치질을 마쳤을 때)
-//    var triggerGroupName: String?         // 해당 트리거가 어떤 그룹(일상, 장소 등)이었는지 알고 싶다면
-//    
-//    init(title: String, createdAt: Date = Date(), triggerAction: String? = nil, groupName: String? = nil) {
-//        self.title = title
-//        self.createdAt = createdAt
-//        self.selectedTriggerAction = triggerAction
-//        self.triggerGroupName = groupName
-//    }
-//    
-//    // UI에서 주간 현황을 그릴 때 "일 별 완료 여부" 확인 함수
-//    func isCompletedOnDay(on date: Date) -> Bool {
-//        return logs.first { log in Calendar.current.isDate(log.date, inSameDayAs: date)}?.isDone ?? false
-//    }
-//}
-
-
-
-
-// 트리거 구조체
-//struct RecommendedTrigger: Identifiable {
-//    let id = UUID()
-//    let title: String          // 예: "🔄 일상 고정 루틴"
-//    let subTitle: String       // 예: "이미 하고 있는 일, 일상의 닻(Anchor)"
-//    let items: [String]
-//}
-
-
+extension Habit {
+    static var sampleDataWithLogs: [Habit] {
+        let habits = Habit.sampleData // 기존에 정의하신 4개의 습관 가져오기
+        
+        // 1. 물 2L 마시기 (최근 3일간 연속 완료)
+        let log1_1 = HabitLog(date: Calendar.current.date(byAdding: .day, value: -2, to: Date())!, isDone: true, completedCount: 1)
+        let log1_2 = HabitLog(date: Calendar.current.date(byAdding: .day, value: -1, to: Date())!, isDone: true, completedCount: 2)
+        let log1_3 = HabitLog(date: Date(), isDone: true, completedCount: 3)
+        habits[0].logs = [log1_1, log1_2, log1_3]
+        
+        // 2. SwiftUI 공부하기 (어제는 완료, 오늘은 아직 미완료)
+        let log2_1 = HabitLog(date: Calendar.current.date(byAdding: .day, value: -1, to: Date())!, isDone: true, completedCount: 1)
+        let log2_2 = HabitLog(date: Date(), isDone: false, completedCount: 1)
+        habits[1].logs = [log2_1, log2_2]
+        
+        // 3. 헬스장 가기 (그저께 완료)
+        let log3_1 = HabitLog(date: Calendar.current.date(byAdding: .day, value: -2, to: Date())!, isDone: true, completedCount: 1)
+        habits[2].logs = [log3_1]
+        
+        // 4. 독서 10페이지 (신규 습관, 기록 없음)
+        habits[3].logs = []
+        
+        return habits
+    }
+}

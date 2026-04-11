@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftData
+import SwiftUI
 
 
 @Observable
@@ -31,9 +32,13 @@ class HabitRepository {
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: isInMemoryOnly)
         
         do {
-            
+
             modelContainer = try ModelContainer(for: schema, configurations: [modelConfiguration])
             notificationRepository = NotificationRepository(modelContainer: modelContainer)
+            
+            if isInMemoryOnly {
+                try loadSampleHabits()
+            }
             
         } catch {
             
@@ -42,4 +47,24 @@ class HabitRepository {
         }
     }
     
+    private func loadSampleHabits() throws {
+        for habit in Habit.sampleData {
+            context.insert(habit)
+        }
+        
+        for habitLog in Habit.sampleDataWithLogs {
+            context.insert(habitLog)
+        }
+    }
+    
+}
+
+
+private let sampleContainer = HabitRepository(isInMemoryOnly: true)
+
+extension View {
+    func sampleDataContainer() -> some View {
+        self.environment(sampleContainer)
+            .modelContainer(sampleContainer.modelContainer)
+    }
 }
