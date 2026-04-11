@@ -91,7 +91,7 @@ extension Habit {
         ),
         
         Habit(
-            title: "헬스장 가기",
+            title: "헬스장가서 40분 근력하기",
             emoji: "🏋️‍♂️",
             createdAt: Date().addingTimeInterval(-86400 * 14), // 14일 전 생성
             isArchived: false,
@@ -147,8 +147,8 @@ extension Habit {
         habits[0].logs = [log1_1, log1_2, log1_3]
         
         // 2. SwiftUI 공부하기 (어제는 완료, 오늘은 아직 미완료)
-        let log2_1 = HabitLog(date: Calendar.current.date(byAdding: .day, value: -1, to: Date())!, isDone: true, completedCount: 1)
-        let log2_2 = HabitLog(date: Date(), isDone: false, completedCount: 1)
+        let log2_1 = HabitLog(date: Calendar.current.date(byAdding: .day, value: -2, to: Date())!, isDone: true, completedCount: 1)
+        let log2_2 = HabitLog(date: Calendar.current.date(byAdding: .day, value: -1, to: Date())!, isDone: true, completedCount: 1)
         habits[1].logs = [log2_1, log2_2]
         
         // 3. 헬스장 가기 (그저께 완료)

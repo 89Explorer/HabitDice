@@ -13,6 +13,8 @@ struct HomeView: View {
     
     // MARK: - 프로퍼티
     @State private var currentDate: Date = .init()
+    @State private var weekSlider: [Date.WeekDay] = []
+    
 
     @Query(sort: \Habit.createdAt) private var habit: [Habit]
     
@@ -27,15 +29,21 @@ struct HomeView: View {
                         homeHeaderView()
                         
                         habitListview()
+                            .padding(.top, 12)
                         
-                        ForEach(habit) { item in
-                            habitStatusRow(habit: item)
-                        }
-                        
+                        weeklyHabitStatus()
+                            .padding(.top, 12)
+
                     }
                     
                 }
                 .padding(20)
+            }
+            .onAppear {
+                if weekSlider.isEmpty {
+                    let currentWeek = Date().fetchWeek()
+                    weekSlider = currentWeek
+                }
             }
         }
     }
@@ -58,18 +66,19 @@ struct HomeView: View {
     @ViewBuilder
     func habitListview() -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("오늘의 습관")
+            Text("습관 목록 😙")
                 .font(.headline)
                 .fontWeight(.bold)
-                .foregroundStyle(.primary)
+                .foregroundStyle(Color(.secondaryLabel))
+                .padding(.horizontal, 4)
             
             ForEach(habit) { item in
                 triggerCardView(habit: item)
             }
         }
-        .padding(16)
+        .padding(20)
         .background(
-            RoundedRectangle(cornerRadius: 20)
+            RoundedRectangle(cornerRadius: 32)
                 .fill(
                     Color(.systemBackground)
                 )
@@ -123,7 +132,7 @@ struct HomeView: View {
             }
             
         }
-        .padding(12)
+        .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(
@@ -141,32 +150,117 @@ struct HomeView: View {
     }
     
     
-    
-    
     @ViewBuilder
-    func habitStatusRow(habit: Habit) -> some View {
-        GridRow {
-            Text(habit.title)
-                .font(.body)
-                .fontWeight(.medium)
-                .gridColumnAlignment(.leading)
-            Spacer()
-                .gridCellUnsizedAxes(.horizontal)
-            ForEach(habit.logs, id: \.self) { item in
-                RoundedRectangle(cornerRadius: 4)
-                    .fill(
-                        item.isDone ? Color(.systemBlue).opacity(0.5) : Color.clear
-                    )
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 4)
-                            .stroke(
-                                Color(.systemGray5), lineWidth: 2
-                            )
-                    }
-                    .frame(width: 16, height: 16)
-            }
+    func weeklyHabitStatus() -> some View {
+        VStack(alignment: .leading, spacing: 16) {
             
+            // 헤더
+            HStack(alignment: .firstTextBaseline) {
+                Text("주간 현황 📊")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color(.secondaryLabel))
+                
+                Spacer()
+                
+                // 이번주 날짜 범위를 "4월 1주차"
+                if let firstDate = weekSlider.first?.date,
+                   let lastDate = weekSlider.last?.date {
+                    HStack(spacing: 4) {
+                        Text(Date().weekRangeTitle(from: firstDate))
+                            .font(.caption)
+                            .fontWeight(.regular)
+                            .foregroundStyle(Color(.systemBlue))
+                        Text("(\(firstDate.format("M/d")) - \(lastDate.format("M/d")))")
+                            .font(.caption)
+                            .foregroundStyle(Color(.secondaryLabel))
+                    }
+                }
+            }
+            .padding(.horizontal, 4)
+            
+            GeometryReader { geo in
+                let totalWidth = geo.size.width
+                let titleWidth = totalWidth * 0.5
+                let daysWidth = totalWidth * 0.5
+                let dayCount = CGFloat(weekSlider.count) // 7
+                let cellSize = daysWidth / dayCount
+                
+                VStack(spacing: 8) {
+                    
+                    HStack(spacing: 0) {
+                        Text("")
+                            .frame(width: titleWidth, alignment: .leading)
+                        
+                        ForEach(weekSlider) { day in
+                            let isToday = Calendar.current.isDateInToday(day.date)
+                            Text(day.date.format("E"))
+                                .font(.body)
+                                .fontWeight(isToday ? .bold : .regular)
+                                .foregroundStyle(isToday ? Color(.systemBlue) : Color(.secondaryLabel))
+                                .frame(width: cellSize)
+                            
+                        }
+                    }
+                    
+                    Divider()
+                    
+                    // 습관별 행
+                    ForEach(habit) { item in
+                        HStack( spacing: 0) {
+                            // 습관 타이틀
+                            Text(item.title)
+                                .font(.subheadline)
+                                .foregroundStyle(.primary)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.8)
+                                .frame(width: titleWidth, alignment: .leading)
+                        
+                            // logs를 weekSlider의 각 날짜에 맞는 log를 찾아서 표시
+                            ForEach(weekSlider) { day in
+                                let matchedLog = item.logs.first {
+                                    Calendar.current.isDate($0.date, inSameDayAs: day.date)
+                                }
+                                logCell(isDone: matchedLog?.isDone ?? false, cellSize: cellSize)
+                            }
+                        }
+                        .hSpacing(.leading)
+                    }
+                }
+            }
+            .frame(height: CGFloat(habit.count) * 28 + 40)
         }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 32)
+                .fill(Color(.systemBackground))
+        )
+
+        
+    }
+    
+    // 로그 셀
+    @ViewBuilder
+    func logCell(isDone: Bool, cellSize: CGFloat) -> some View {
+        ZStack {
+            if isDone {
+                // 완료 -> systemBlue 채우기 + 체크 아이콘
+                //RoundedRectangle(cornerRadius: 8)
+                Circle()
+                    .fill(Color(.systemBlue))
+                    .frame(width: cellSize - 4, height: cellSize - 4)
+                Image(systemName: "checkmark")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundStyle(Color(.systemBackground))
+            } else {
+                // 미완료 -> 연환 회색 테두리만 표시
+                //RoundedRectangle(cornerRadius: 8)
+                Circle()
+                    .stroke(Color(.systemGray5), lineWidth: 2)
+                    .frame(width: cellSize - 4, height: cellSize - 4)
+            }
+        }
+        .frame(width: cellSize)
     }
 }
 
