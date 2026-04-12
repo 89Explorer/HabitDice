@@ -47,6 +47,14 @@ class HabitRepository {
         }
     }
     
+    func insert(_ model: some PersistentModel) {
+        context.insert(model)
+    }
+
+    func save() {
+        try? context.save()
+    }
+    
     private func loadSampleHabits() throws {
         for habit in Habit.sampleData {
             context.insert(habit)
