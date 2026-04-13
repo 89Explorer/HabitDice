@@ -34,6 +34,9 @@ struct OptionSelectView: View {
     
     @State private var isRepeatOn: Bool = false
     @State private var repeatDays: Set<Int> = []
+    @State private var isInvalidSelection: Bool = false // UI 경고 표시용 (빨간 테두리, 문구)
+    @State private var showValidationAlert: Bool = false // 얼럿 트리거용
+    
     
     @State private var isAlarmOn: Bool = false // 토글 버튼 용 변수
     
@@ -101,7 +104,8 @@ struct OptionSelectView: View {
                 }
                 
                 PrimaryButton(title: "저장", isEnabled: true){
-                    saveAction()
+                    //saveAction()
+                    handleRepeatSave()
                     print("--- 최종 설정 데이터 ---")
                     print("타이틀: \(habit.title)")
                     print("이모지: \(habit.emoji)")
@@ -115,6 +119,7 @@ struct OptionSelectView: View {
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 20)
+            
         }
     }
     
@@ -144,6 +149,15 @@ struct OptionSelectView: View {
                     .fontWeight(.bold)
                     .foregroundStyle(Color(.label))
                 
+                // 요일 미 선택시 나타나는 안내문구
+                if isInvalidSelection && isRepeatOn && repeatDays.isEmpty {
+                    Text("⚠️ 요일을 선택해주세요")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.red)
+                        .transition(.opacity)
+                }
+                
                 Spacer()
                 
                 Toggle("", isOn: $isRepeatOn.animation(.easeInOut(duration: 0.25)))
@@ -151,8 +165,13 @@ struct OptionSelectView: View {
                     .toggleStyle(.switch)
                     .tint(.accentColor)
                     .onChange(of: isRepeatOn) { oldValue, newValue in
-                        if !newValue {
+                        if newValue {
+                            repeatDays = [2,3,4,5,6]
+                            isInvalidSelection = false
+                            
+                        } else {
                             repeatDays = []
+                            isInvalidSelection = false
                         }
                     }
             }
@@ -168,8 +187,10 @@ struct OptionSelectView: View {
                                     repeatDays.remove(day.rawValue)
                                 } else {
                                     repeatDays.insert(day.rawValue)
+                                    isInvalidSelection = false
                                 }
                             }
+                            
                         } label: {
                             Text(day.label)
                                 .font(.system(size: 14))
@@ -180,6 +201,7 @@ struct OptionSelectView: View {
                                     RoundedRectangle(cornerRadius: 8)
                                         .fill(repeatDays.contains(day.rawValue) ? Color.accentColor : Color(.systemGray6))
                                 }
+                            
                         }
                         .buttonStyle(.plain)
                     }
@@ -197,16 +219,35 @@ struct OptionSelectView: View {
         )
         .overlay {
             RoundedRectangle(cornerRadius: 20)
-                .stroke (
-                    Color.accentColor.opacity(0.4),
-                    lineWidth: 2
+                .stroke(
+                    (isInvalidSelection && isRepeatOn && repeatDays.isEmpty) ? Color.red : Color.accentColor.opacity(0.4),
+                    lineWidth: (isInvalidSelection && isRepeatOn && repeatDays.isEmpty) ? 3 : 2
                 )
         }
+        .alert("요일 미선택", isPresented: $showValidationAlert) {
+            Button("하루만 할게요 (1회성)"){
+                isRepeatOn = false
+                let today = Calendar.current.component(.weekday, from: Date())
+                repeatDays = [today]
+                saveAction()
+            }
+            Button("요일 선택하기", role: .cancel) {
+                //showDayWarning = true
+            }
+        } message: {
+            Text("반복을 설정하셨지만 요일을 선택하지 않으셨습니다.😅\n오늘 하루만 수행하는 습관으로 만들까요?")
+                .font(.headline)
+                .fontWeight(.semibold)
+                .multilineTextAlignment(.leading)
+        }
+        
         // opacity: 투명도 (뷰가 나타날 떄는 0 -> 100, 뷰가 사라질 떄는 100 -> 0)
         // move(edge: .top): 위치 이동 (뷰가 나타날 때는 위쪽에서 원래 자리로 내려오면서 등장, 뷰가 사라질때는 반대)
         // combined(with: ): 위의 2가지를 동시에 적용
         //.transition(.opacity.combined(with: .move(edge: .top)))
         //.animation(.easeInOut, value: isRepeatOn)
+        
+        
         .padding(4)
         
     }
@@ -255,7 +296,7 @@ struct OptionSelectView: View {
                             alarmData = .now
                         }
                     }
-                   
+                
             }
             
             if isPickerVisible {
@@ -301,6 +342,16 @@ struct OptionSelectView: View {
         .onAppear {
             // 화면이 나타날 때 초기값 세팅
             isPickerVisible = isAlarmOn
+        }
+    }
+    
+    private func handleRepeatSave() {
+        if isRepeatOn && repeatDays.isEmpty {
+            // 요일이 비어있다면 경고 UI를 켜고 얼럿을 띄움
+            isInvalidSelection = true
+            showValidationAlert = true
+        } else {
+            saveAction()
         }
     }
     
@@ -353,7 +404,7 @@ struct OptionSelectView: View {
                 dismiss()
             }
         }
-
+        
     }
 }
 
