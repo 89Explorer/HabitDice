@@ -85,6 +85,25 @@ struct HomeView: View {
     
     @ViewBuilder
     func habitListView() -> some View {
+        let weekday = Calendar.current.component(.weekday, from: currentDate)
+        
+        // 필터링 로직 강화
+        // 1회성 습관 (반복 여부 -> false)과 n회성 습관 (반복 여부 -> true) 구분
+        let todayHabits = habit.filter { item in
+            // 이미 졸업 (isArchived)인 습관은 제외
+            guard !item.isArchived else { return false }
+            
+            let containsWeekday = item.repeatDays.contains(weekday)
+            
+            if item.isRepeatOn {
+                return containsWeekday
+            } else {
+                // 1회성: 오늘 요일 포함 && 생성일이 오늘(currentDate)일 때만
+                return containsWeekday && Calendar.current.isDate(item.createdAt, inSameDayAs: currentDate)
+            }
+        }
+        
+        
         VStack(alignment: .leading, spacing: 4) {
             Text("오늘, 도전할 습관을 선택하세요😙")
                 .font(.headline)
@@ -92,9 +111,7 @@ struct HomeView: View {
                 .foregroundStyle(Color(.secondaryLabel))
                 .padding(.horizontal, 4)
             
-            let weekday = Calendar.current.component(.weekday, from: currentDate)
-            let todayHabits = habit.filter { $0.repeatDays.contains(weekday) }
-            
+  
             if habit.isEmpty {
                 emptyHabitView(
                     icon: "plus.circle",
@@ -111,15 +128,10 @@ struct HomeView: View {
                     subMessage: "내일의 습관을 위해 충분히 쉬세요 ☁️"
                 )
             } else {
-                ForEach(habit) { item in
-                    
-                    if item.repeatDays.contains(weekday) {
-                        habitCardView(habit: item)
-                    }
+                ForEach(todayHabits) { item in
+                    habitCardView(habit: item)
                 }
             }
-            
-            
         }
         .padding(20)
         .background(

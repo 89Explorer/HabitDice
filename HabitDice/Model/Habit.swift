@@ -65,6 +65,10 @@ final class Habit {
 }
 
 extension Habit {
+    
+    // 단일 샘플 접근을 위한 정적 프로퍼티
+    static let detailSample = sampleData[0]
+    
     static let sampleData: [Habit] = [
         Habit(
             title: "물 2L 마시기",

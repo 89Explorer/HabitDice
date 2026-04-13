@@ -247,7 +247,6 @@ struct OptionSelectView: View {
         //.transition(.opacity.combined(with: .move(edge: .top)))
         //.animation(.easeInOut, value: isRepeatOn)
         
-        
         .padding(4)
         
     }
@@ -305,7 +304,7 @@ struct OptionSelectView: View {
                     DatePicker("", selection: $alarmData, displayedComponents: [.hourAndMinute])
                         .labelsHidden()
                         .datePickerStyle(.wheel)
-                        .frame(maxWidth: 280)
+                        .frame(maxWidth: 280)  // 임의로 가로폭 제한 (DatePicker 경우 가로폭을 최대한 가져가려는 성질 때문)
                         .transition(.opacity.combined(with: .move(edge: .top)))
                     
                     Spacer()
@@ -412,7 +411,7 @@ struct OptionSelectView: View {
     
     let container = HabitRepository(isInMemoryOnly: true)
     return  OptionSelectView(
-        habit: Habit(title: "양치질", emoji: "👍", createdAt: .now, isArchived: false, isRepeatOn: false, repeatDays: [], isAlarmOn: false, logs: [])
+        habit: Habit(title: "양치질", emoji: "👍", createdAt: .now, isArchived: false, selectedTriggerAction: "단거 먹으면",isRepeatOn: false, repeatDays: [], isAlarmOn: false, logs: [])
         
     )
     .environment(container)
