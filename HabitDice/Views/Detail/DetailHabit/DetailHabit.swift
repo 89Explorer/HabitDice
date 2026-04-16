@@ -9,12 +9,23 @@ import SwiftUI
 import SwiftData
 
 
-
 struct DetailHabit: View {
     
     
     @Bindable var habit: Habit
     
+    @State private var showGraduateSheet: Bool = false     // 습관 졸업(완료) 여부를 제어하는 변수
+    @State private var isEditing: Bool = false    // 수정 여부를 제어하는 변수
+    @State private var showExitAlert: Bool = false    // 수정 중일 경우에 뒤로가기 전 안내창을 제어하는 변수
+    
+    @Environment(\.dismiss) var dismiss
+    
+    // 수정용 임시 값 (취소 시 원상복구)
+    @State private var draftTrigger: String = ""
+    @State private var draftRepeatDays: Set<Int> = []
+    @State private var draftIsRepeatOn: Bool = false
+    @State private var draftIsAlarmOn: Bool = false
+    @State private var draftAlarmData: Date = Date()
     
     // MARK: - 계산 프로퍼티
     
@@ -28,17 +39,125 @@ struct DetailHabit: View {
         ZStack(alignment: .top) {
             Color(Color(.secondarySystemBackground)).ignoresSafeArea()
             
-            VStack(spacing: 0) {
-                
-                ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 12) {
-                        heroSection
-                        infoSection
-                        statSection
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 12) {
+                    
+                    // 배너가 내려왔을 때 콘텐츠가 가렺지지ㅣ 않게 하기 위한 여백 조절
+                    if isEditing {
+                        Spacer().frame(height: 40)
+                    }
+    
+                    heroSection
+                        .blur(radius: isEditing ? 5 : 0)
+                    
+                    infoSection
+                        .scaleEffect(isEditing ? 1.05 : 1.0)
+                        .shadow(color: .black.opacity(isEditing ? 0.15 : 0), radius: 10, x: 0, y: 10) // 띄워진 느낌 추가
+                    
+                    statSection
+                        .blur(radius: isEditing ? 5 : 0)
+                    
+                    graduateCard
+                        .blur(radius: isEditing ? 5 : 0)
+                        .disabled(isEditing ? true : false)
+                    
+                }
+                .padding(.top, 10)
+            }
+            
+            if isEditing {
+                editBanner
+                    .padding(.top, 72)
+                    .background(Material.ultraThin)
+                    .ignoresSafeArea(edges: .top)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .zIndex(1)
+            }
+            
+        }
+        .animation(.spring(), value: isEditing) // 배너 등장 애니메이션
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(isEditing ? .hidden : .visible, for: .navigationBar)
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    if isEditing {
+                        // 수정 중 일 경우에는 알람 띄움
+                        showExitAlert = true
+                    } else {
+                        dismiss()
+                    }
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .fontWeight(.bold)
+                }
+
+            }
+            
+            ToolbarItem(placement: .topBarTrailing) {
+                if isEditing {
+                    Button("완료", systemImage: "checkmark") {
+                        withAnimation(.easeInOut) {
+                            isEditing = false
+                        }
+                    }
+                    .fontWeight(.bold)
+                } else {
+                    Menu {
+                        Button {
+                            withAnimation(.easeInOut) {
+                                isEditing = true
+                            }
+                        } label: {
+                            Label("수정하기", systemImage: "pencil")
+                        }
+                        
+                        Button(role: .destructive) {
+                            // 삭제 로직
+                        } label: {
+                            Label("삭제하기", systemImage: "trash")
+                        }
+                        
+                        Divider()
+                        
+                        Button(role: .cancel) {
+                            // 취소 로직
+                        } label: {
+                            Label("취소하기", systemImage: "xmark")
+                        }
+                    } label: {
+                        Image(systemName: "ellipsis")
+                            .rotationEffect(.degrees(90))
                     }
                 }
             }
-            
+        }
+        // 🔥 저장하지 않고 나갈 때의 확인 창
+        .confirmationDialog(
+            "변경사항을 저장할까요? 🛠️",
+            isPresented: $showExitAlert,
+            titleVisibility: .visible
+        ) {
+            Button("아쉽지만 폐기하기", role: .destructive) {
+                dismiss()
+            }
+            Button("조금 더 다듬기 👍") { }
+
+        } message: {
+            Text("편집 중인 내용이 있습니다. 지금 나가시면 모든 변경사항이 취소됩니다.")
+        }
+        .sheet(isPresented: $showGraduateSheet) {
+            GraduateConfirmSheet(
+                habitTitle: habit.title,
+                onGraduate: {
+                    
+                } , onCancel: {
+                    showGraduateSheet = false
+                }
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
         }
     }
     
@@ -95,14 +214,15 @@ struct DetailHabit: View {
             infoRow(
                 label: "🔫 트리거",
                 content: {
-                Text(habit.selectedTriggerAction ?? "선택 안함")
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .foregroundStyle(.primary)
-                    .multilineTextAlignment(.trailing)
+                    Text(habit.selectedTriggerAction ?? "선택 안함")
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.primary)
+                        .multilineTextAlignment(.trailing)
                 }
             )
             .padding(.top, 12)
+            
             Divider().padding(.horizontal, 24)
             
             // 반복
@@ -116,7 +236,7 @@ struct DetailHabit: View {
                             Text(day.label)
                                 .font(.body)
                                 .fontWeight(.bold)
-                                .padding(8)
+                                .padding(4)
                                 .background(
                                     Circle()
                                         .fill(
@@ -155,6 +275,13 @@ struct DetailHabit: View {
                     Color(.systemBackground)
                 )
         )
+        .overlay {
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(
+                    isEditing ? Color(.systemBlue) : Color.clear,
+                    lineWidth: 3.0
+                )
+        }
         .padding(.horizontal, 24)
     }
     
@@ -174,6 +301,12 @@ struct DetailHabit: View {
             Spacer()
             
             content()
+            
+            if isEditing {
+                Image(systemName: "chevron.right")
+                    .font(.subheadline)
+                    .foregroundStyle(Color(.systemGray3))
+            }
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
@@ -204,10 +337,9 @@ struct DetailHabit: View {
                 )
         )
         .padding(.horizontal, 24)
-
+        
         
     }
-    
     
     private func statItem(value: String, label: String) -> some View {
         VStack(spacing: 4) {
@@ -221,6 +353,77 @@ struct DetailHabit: View {
                 .foregroundStyle(.secondary)
         }
         .hSpacing(.center)
+    }
+    
+    
+    private var graduateCard: some View {
+        Button {
+            showGraduateSheet = true
+        } label: {
+            HStack(spacing: 12) {
+                Text("🏆")
+                    .font(.system(size: 28))
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("이 습관 마스터하기")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundStyle(Color.accentColor)
+                    Text("습관이 자연스러워졌나요?")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 16))
+                    .foregroundStyle(Color.accentColor)
+            }
+            .padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(
+                        Color(.systemBackground)
+                    )
+            )
+            .padding(.horizontal, 24)
+        }
+        .buttonStyle(.plain)
+    }
+    
+    private var bottomArea: some View {
+        VStack(spacing: 8) {
+            Button {
+                print("저장하기")
+            } label: {
+                Text("수정하기")
+                    .padding(20)
+                    .font(.title3)
+                    .fontWeight(.bold)
+                    .foregroundStyle(Color(.label))
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(
+                                Color(.systemBlue)
+                            )
+                    )
+                    .padding(.horizontal, 24)
+                
+            }
+        }
+    }
+    
+    private var editBanner: some View {
+        Text("트리거, 반복, 알람을 수정할 수 있어요 👍")
+            .font(.subheadline)
+            .fontWeight(.medium)
+            .foregroundStyle(.primary)
+            .hSpacing(.center)
+            .padding(.vertical, 12)
+            .background(Color(.systemBlue).opacity(0.15))
+            .overlay(alignment: .bottom) {
+                Divider()
+            }
     }
     
     

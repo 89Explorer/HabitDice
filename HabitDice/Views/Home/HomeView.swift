@@ -129,7 +129,11 @@ struct HomeView: View {
                 )
             } else {
                 ForEach(todayHabits) { item in
-                    habitCardView(habit: item)
+                    NavigationLink {
+                        DetailHabit(habit: item)
+                    } label: {
+                        habitCardView(habit: item)
+                    }
                 }
             }
         }
