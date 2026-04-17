@@ -18,6 +18,7 @@ final class Habit {
     
     // 상태 관리
     var isArchived: Bool  // 습관 졸업 여부 (True 면 더 이상 리스트에 표시 안함)
+    var archivedDate: Date?    // 습관 졸업 날짜
     
     // 트리거 정보
     var selectedTriggerAction: String?  // "양치질을 마쳤을 떄"
@@ -62,9 +63,82 @@ final class Habit {
             Calendar.current.isDate(log.date, inSameDayAs: date)}?.isDone ?? false
     }
     
+    func habitArchive() {
+        self.isArchived = true
+        self.archivedDate = Date()    // 현재 시간을 졸업일로 기록
+    }
+    
 }
 
 extension Habit {
+    
+    // 생성일로부터 현재 (또는 졸업일) 까지 습관을 실천했어야 하는 총 횟수
+    var totalChallengeCount: Int {
+        let calendar = Calendar.current
+        var count = 0
+        
+        // 시작일: 생성일 자정
+        var cursor = calendar.startOfDay(for: self.createdAt)
+        // 종료일: 졸업했따면 졸업일, 아니면 오늘 자정
+        let endDate = isArchived ? (archivedDate ?? Date()) : Date()
+        let endCursor = calendar.startOfDay(for: endDate)
+        
+        while cursor <= endCursor {
+            let weekday = calendar.component(.weekday, from: cursor)
+            // 해당 날짜의 요일이 반복 설정에 포함되어 있다면 카운트
+            if repeatDays.contains(weekday) {
+                count += 1
+            }
+            
+            // 다음날로 이동
+            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
+            cursor = next
+        }
+        
+        return count
+    }
+    
+    // 전체 기간 동안 실제 완료(isDone)한 총 횟수
+    var totalSuccessCount: Int {
+        // logs 중에서 isDone이 true 인 것들의 개수만 반환
+        return logs.filter { $0.isDone }.count
+    }
+    
+    // 전체 기간 동안 달성률 (0.0 ~ 1.0)
+    var achievementRate: Double {
+        let total = totalChallengeCount
+        guard total > 0 else { return 0.0 }
+        
+        return Double(totalSuccessCount) / Double(total)
+    }
+    
+    // UI 표시용 달성률 텍스트 (예: 85%)
+    var achievementRateString: String {
+        return "\(Int(achievementRate * 100))%"
+    }
+    
+    // 습관 생성일로부터 현재 (또는 졸업일) 까지 며칠 째인지 반환 (1일차부터 시작)
+    var daysSinceCreation: Int {
+        let calendar = Calendar.current
+        
+        // 기준이 되는 시작일 (시간 정보를 00:00:00으로 초기화)
+        let startDate = calendar.startOfDay(for: self.createdAt)
+        
+        // 기준이 되는 종료일 (졸업했다면 졸업일 아니면 오늘)
+        let endDate = isArchived ? (archivedDate ?? Date()) : Date()
+        let endOfTarget = calendar.startOfDay(for: endDate)
+        
+        // 두 날짜 사이의 일수 차이 계산
+        let components = calendar.dateComponents([.day], from: startDate, to: endOfTarget)
+        
+        // 1일차부터 시작하게 하려면 +1을 합니다.
+        return (components.day ?? 0) + 1
+    }
+    
+    // 습관 생성일로부터 오늘까지 몇 주차인지 계산
+    var weeksSinceCreation: Int {
+        return (daysSinceCreation + 6) / 7 // 올림 계산법
+    }
     
     // 이번 달 완료 횟수
     var monthlyCompletedCount: Int {
@@ -75,6 +149,46 @@ extension Habit {
         return logs.filter {
             calendar.isDate($0.date, equalTo: now, toGranularity: .month) && $0.isDone }.count
     }
+    
+    // 최장 연속일
+    var maxStreak: Int {
+        let calendar = Calendar.current
+        
+        // 완료한 날짜만 정렬해서 가져오기
+        let completedDays = Set(logs.filter { $0.isDone }.map { calendar.startOfDay(for: $0.date) })
+        if completedDays.isEmpty { return 0 }
+        
+        var maxCount = 0
+        var currentRunningStreak = 0
+        
+        // 생성일로부터 오늘(또는 졸업일)까지 하루 씩 전진
+        var cursor = calendar.startOfDay(for: createdAt)
+        let endDate = isArchived ? (archivedDate ?? Date()) : Date()
+        let endCursor = calendar.startOfDay(for: endDate)
+        
+        while cursor <= endCursor {
+            let weekday = calendar.component(.weekday, from: cursor)
+            
+            if repeatDays.contains(weekday) {
+                if completedDays.contains(cursor) {
+                    // 완료했다면 현재 스택을 올리고, 최대값 갱신
+                    currentRunningStreak += 1
+                    maxCount = max(maxCount, currentRunningStreak)
+                } else {
+                    // 실패했다면 스택 초기화
+                    if cursor < calendar.startOfDay(for: Date()) {
+                        currentRunningStreak = 0
+                    }
+                }
+            }
+            
+            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
+            
+            cursor = next
+        }
+        return maxCount
+    }
+    
     
     // MARK: - 연속 달성일 (반복 요일 기준)
     var currentStreak: Int {
@@ -149,34 +263,6 @@ extension Habit {
         }.count
         
         return Int((Double(completedCount) / Double(expectedCount)) * 100)
-    }
-    
-    // MARK: - 전체 완료 횟수
-    var totalCompletedCount: Int {
-        logs.filter { $0.isDone }.count
-    }
-    
-    // MARK: - 전체 달성률 (생성일부터 오늘까지)
-    var totalAchievementRate: Int {
-        let calendar = Calendar.current
-        let now = Date()
-        let startDay = calendar.startOfDay(for: createdAt)
-        
-        var cursor = startDay
-        var expectedCount = 0
-        
-        while cursor <= now {
-            let weekday = calendar.component(.weekday, from: cursor)
-            if repeatDays.contains(weekday) {
-                expectedCount += 1
-            }
-            guard let next = calendar.date(byAdding: .day, value: 1, to: cursor) else { break }
-            cursor = next
-        }
-        
-        guard expectedCount > 0 else { return 0 }
-        
-        return Int((Double(totalCompletedCount) / Double(expectedCount)) * 100)
     }
     
 }

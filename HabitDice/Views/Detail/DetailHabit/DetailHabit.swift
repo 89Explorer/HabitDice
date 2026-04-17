@@ -21,6 +21,7 @@ struct DetailHabit: View {
     @State private var showExitAlert: Bool = false    // 수정 중일 경우에 뒤로가기 전 안내창을 제어하는 변수
     @State private var showValidationAlert: Bool = false    // 요일 미선택 경고용 변수
     @State private var isInvalidRepeatSelection: Bool = false    // 빨간 테두리 전용 변수
+    @State private var showAuthAlert: Bool = false // 알람 권한 설정 Alert 제어용 변수
     
     @FocusState private var isFocused: Bool    // 포커스 상태 정의 (키보드 내리기)
     
@@ -37,9 +38,9 @@ struct DetailHabit: View {
     // MARK: - 계산 프로퍼티
     
     // 습관 생성일로부터 오늘까지 며칠 쨰인지 제어하는 변수
-    private var daysSinceCreation: Int {
-        Calendar.current.dateComponents([.day], from: habit.createdAt, to: Date()).day ?? 0
-    }
+//    private var daysSinceCreation: Int {
+//        Calendar.current.dateComponents([.day], from: habit.createdAt, to: Date()).day ?? 0
+//    }
     
     
     var body: some View {
@@ -141,6 +142,9 @@ struct DetailHabit: View {
                 }
             }
         }
+        .overlay {
+            
+        }
         // 🔥 저장하지 않고 나갈 때의 확인 창
         .confirmationDialog(
             "변경사항을 저장할까요? 🛠️",
@@ -204,7 +208,7 @@ struct DetailHabit: View {
                     .fontWeight(.semibold)
                     .foregroundStyle(.secondary)
                 
-                Text("D+\(daysSinceCreation)일")
+                Text("D+\(habit.daysSinceCreation)일")
                     .font(.subheadline)
                     .fontWeight(.bold)
                     .foregroundStyle(.primary)
@@ -347,7 +351,7 @@ struct DetailHabit: View {
                             } else {
                                 // 반복을 끄면 유효성 에러도 사라짐
                                 isInvalidRepeatSelection = false
-                                draftRepeatDays = [] 
+                                draftRepeatDays = []
                             }
                         }
                 },
@@ -422,6 +426,22 @@ struct DetailHabit: View {
                     Toggle("", isOn: $draftIsAlarmOn.animation(.spring()))
                         .labelsHidden() // 레이블은 이미 "반복"이 있으므로 숨김
                         .tint(.accentColor)
+                        .onChange(of: draftIsAlarmOn) { oldValue, newValue in
+                            if newValue {
+                                Task {
+                                    // 권한 체크 및 요청
+                                    let isAllowed = await container.notificationRepository.checkAndRequestNotificationAuth()
+                                    
+                                    if !isAllowed {
+                                        // 권한이 없다면 토글을 다시 끄고 알림창 표시
+                                        await MainActor.run {
+                                            draftIsAlarmOn = false
+                                            showAuthAlert = true
+                                        }
+                                    }
+                                }
+                            }
+                        }
                 },
                 editBottomContent: {
                     if draftIsAlarmOn {
@@ -447,6 +467,16 @@ struct DetailHabit: View {
                     isEditing ? Color(.systemBlue) : Color.clear,
                     lineWidth: 3.0
                 )
+        }
+        .alert("알림 권한 필요", isPresented: $showAuthAlert) {
+            Button("설정으로 이동") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            Button("취소", role: .cancel) { }
+        } message: {
+            Text("알람을 받으려면 설정에서 알림 권한을 허용해주세요.")
         }
         .padding(.horizontal, 24)
     }
@@ -626,13 +656,23 @@ struct DetailHabit: View {
         isEditing = true
     }
     
+    private func doGraduate() {
+        habit.habitArchive()
+    }
+    
     func updateHabit() {
+        // 반복 요일 유효성 검사
         if draftIsRepeatOn && draftRepeatDays.isEmpty {
             showValidationAlert = true    // 알람 띄우기
             isInvalidRepeatSelection = true    // 테두리 켜기
             return  // 함수 종료 - 저장은 안함
         }
         
+        // 기존 알림 상태 백업
+        let oldNotification = habit.notification
+        
+        // 데이터 업데이트 (Draft -> habit)
+        habit.selectedTriggerAction = draftTrigger
         habit.isRepeatOn = draftIsRepeatOn
         
         if draftIsRepeatOn {
@@ -644,19 +684,42 @@ struct DetailHabit: View {
             habit.repeatDays = [today]
         }
         
-        habit.selectedTriggerAction = draftTrigger
+        // 알림 데이터 처리
         habit.isAlarmOn = draftIsAlarmOn
-        
-        if let notification = habit.notification {
-            notification.time = draftAlarmData
+        if draftIsAlarmOn {
+            if let existing = habit.notification {
+                existing.time = draftAlarmData
+            } else {
+                // 알림 객체가 없다면, 새로 생성
+                let newNotification = Notification(time: draftAlarmData)
+                habit.notification = newNotification
+            }
+        } else {
+            habit.notification = nil    // 관계 끊기
         }
         
-        // 저장 후 편집 모드 종료
-        withAnimation {
-            isInvalidRepeatSelection = false
-            isEditing = false
+        // 비동기 알림 스케줄링
+        Task {
+            if draftIsAlarmOn {
+                // 알림 등록
+                await container.notificationRepository.registerNotification(habit: habit)
+            } else {
+                if let toCancel = oldNotification {
+                    container.notificationRepository.cancelNotification(notification: toCancel)
+                }
+            }
+            
+            // 디버깅용 예약 목록 확인
+            container.notificationRepository.checkPendingNotifications()
+            
+            await MainActor.run {
+                withAnimation {
+                    isInvalidRepeatSelection = false
+                    isEditing = false
+                }
+            }
         }
-        
+
     }
     
     // 인포 섹션 (시간 포맷)
