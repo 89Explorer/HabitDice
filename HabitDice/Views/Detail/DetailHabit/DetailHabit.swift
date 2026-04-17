@@ -14,11 +14,18 @@ struct DetailHabit: View {
     
     @Bindable var habit: Habit
     
+    @State private var currentDate: Date = .init()
+    
     @State private var showGraduateSheet: Bool = false     // 습관 졸업(완료) 여부를 제어하는 변수
     @State private var isEditing: Bool = false    // 수정 여부를 제어하는 변수
     @State private var showExitAlert: Bool = false    // 수정 중일 경우에 뒤로가기 전 안내창을 제어하는 변수
+    @State private var showValidationAlert: Bool = false    // 요일 미선택 경고용 변수
+    @State private var isInvalidRepeatSelection: Bool = false    // 빨간 테두리 전용 변수
+    
+    @FocusState private var isFocused: Bool    // 포커스 상태 정의 (키보드 내리기)
     
     @Environment(\.dismiss) var dismiss
+    @Environment(HabitRepository.self) var container
     
     // 수정용 임시 값 (취소 시 원상복구)
     @State private var draftTrigger: String = ""
@@ -46,13 +53,13 @@ struct DetailHabit: View {
                     if isEditing {
                         Spacer().frame(height: 40)
                     }
-    
+                    
                     heroSection
                         .blur(radius: isEditing ? 5 : 0)
                     
                     infoSection
-                        .scaleEffect(isEditing ? 1.05 : 1.0)
-                        .shadow(color: .black.opacity(isEditing ? 0.15 : 0), radius: 10, x: 0, y: 10) // 띄워진 느낌 추가
+                        .scaleEffect(isEditing ? 1.02 : 1.0)
+                        //.shadow(color: .black.opacity(isEditing ? 0.15 : 0), radius: 10, x: 0, y: 10) // 띄워진 느낌 추가
                     
                     statSection
                         .blur(radius: isEditing ? 5 : 0)
@@ -89,17 +96,18 @@ struct DetailHabit: View {
                         dismiss()
                     }
                 } label: {
-                    Image(systemName: "chevron.left")
+                    Image(systemName: isEditing ? "xmark" : "chevron.left")
                         .fontWeight(.bold)
                 }
-
+                
             }
             
             ToolbarItem(placement: .topBarTrailing) {
                 if isEditing {
                     Button("완료", systemImage: "checkmark") {
                         withAnimation(.easeInOut) {
-                            isEditing = false
+                            updateHabit()
+                            //isEditing = false
                         }
                     }
                     .fontWeight(.bold)
@@ -107,7 +115,7 @@ struct DetailHabit: View {
                     Menu {
                         Button {
                             withAnimation(.easeInOut) {
-                                isEditing = true
+                                startEdit()
                             }
                         } label: {
                             Label("수정하기", systemImage: "pencil")
@@ -140,10 +148,12 @@ struct DetailHabit: View {
             titleVisibility: .visible
         ) {
             Button("아쉽지만 폐기하기", role: .destructive) {
-                dismiss()
+                withAnimation(.spring()) {
+                    isEditing = false
+                }
             }
             Button("조금 더 다듬기 👍") { }
-
+            
         } message: {
             Text("편집 중인 내용이 있습니다. 지금 나가시면 모든 변경사항이 취소됩니다.")
         }
@@ -158,6 +168,11 @@ struct DetailHabit: View {
             )
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
+        }
+        .alert("요일을 선택해주세요", isPresented: $showValidationAlert) {
+            Button("확인", role: .cancel) { }
+        } message: {
+            Text("⚠️ 반복 습관으로 설정하려면, 최소 하나 이상의 요일을 선택해야 합니다.")
         }
     }
     
@@ -213,12 +228,79 @@ struct DetailHabit: View {
             // 트리거
             infoRow(
                 label: "🔫 트리거",
-                content: {
+                isEditing: isEditing,
+                mainContent: {
+                    // [일반 모드] 기존 텍스트 표시
                     Text(habit.selectedTriggerAction ?? "선택 안함")
                         .font(.title3)
                         .fontWeight(.bold)
                         .foregroundStyle(.primary)
                         .multilineTextAlignment(.trailing)
+                },
+                // editTopContent: 생략 (기본값 EmptyView()가 자동으로 들어감)
+                editBottomContent: {
+                    // [수정 모드] 아래로 확장되는 입력 영역
+                    VStack(alignment: .leading, spacing: 8) {
+                        TextField(habit.selectedTriggerAction ?? "선택 안함", text: $draftTrigger)
+                            .textFieldStyle(.plain)
+                            .font(.title3)
+                            .fontWeight(.bold)
+                            .focused($isFocused)    // 포커스 바인딩
+                            .submitLabel(.send)     // 키보드 엔터 버튼을 "보내기(완료)"로 변경
+                            .onSubmit {
+                                isFocused = false   // 엔터 누르면 키보드 내림
+                            }
+                            .overlay(alignment: .trailing) {
+                                if !draftTrigger.isEmpty {
+                                    Button { draftTrigger = "" } label: {
+                                        Image(systemName: "xmark.circle.fill")
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                            .padding(.vertical, 4)
+                    }
+                    .toolbar {
+                        ToolbarItemGroup(placement: .keyboard) {
+                            if isEditing {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    HStack(spacing: 8) {
+                                        ForEach(TriggerData.TriggerCategory.allCases, id: \.self) { category in
+                                            // 카테고리 레이블
+                                            Text(category.rawValue)
+                                                .font(.caption)
+                                                .fontWeight(.bold)
+                                                .foregroundStyle(.secondary)
+                                                .padding(.horizontal, 4)
+                                            
+                                            // 카테고리별 추천 버튼
+                                            ForEach(TriggerData.options(for: category)) { item in
+                                                Button {
+                                                    withAnimation(.spring()) {
+                                                        draftTrigger = item.title
+                                                    }
+                                                } label: {
+                                                    Text(item.title)
+                                                        .font(.subheadline)
+                                                        .foregroundStyle(Color(.label))
+                                                        .padding(.horizontal, 8)
+                                                        .padding(.vertical, 4)
+                                                }
+                                                .buttonStyle(.borderedProminent)
+                                                .tint(Color(.systemBlue).opacity(0.15))
+                                                .clipShape(Capsule())
+                                            }
+                                            
+                                            if category != TriggerData.TriggerCategory.allCases.last {
+                                                Divider().frame(height: 20)
+                                            }
+                                        }
+                                    }
+                                    .padding(.horizontal, 4)
+                                }
+                            }
+                        }
+                    }
                 }
             )
             .padding(.top, 12)
@@ -228,47 +310,131 @@ struct DetailHabit: View {
             // 반복
             infoRow(
                 label: "🔄 반복",
-                content: {
-                    HStack(spacing: 4) {
-                        ForEach(DayOfWeek.allCases) { day in
-                            let isOn = habit.repeatDays.contains(day.rawValue)
+                isEditing: isEditing,
+                mainContent: {
+                    if habit.isRepeatOn {
+                        HStack(spacing: 4) {
+                            ForEach(DayOfWeek.allCases) { day in
+                                let isOn = habit.repeatDays.contains(day.rawValue)
+                                
+                                Text(day.label)
+                                    .font(.title3)
+                                    .fontWeight(.bold)
+                                    .padding(4)
+                                    .background(
+                                        Circle()
+                                            .fill(
+                                                isOn ? Color(.systemBlue).opacity(0.25) : Color(.systemGray5)
+                                            )
+                                    )
+                                    .foregroundStyle(isOn ? .primary: .secondary)
+                            }
+                        }
+                    } else {
+                        Text("설정 안함")
+                            .font(.title3)
+                            .foregroundStyle(.secondary)
+                    }
+                },
+                editTopContent: {
+                    // 레이블 옆에 바로 붙는 토글!
+                    Toggle("", isOn: $draftIsRepeatOn.animation(.spring()))
+                        .labelsHidden() // 레이블은 이미 "반복"이 있으므로 숨김
+                        .tint(.accentColor)
+                        .onChange(of: draftIsRepeatOn) { oldValue, newValue in
+                            if newValue {
+                                draftRepeatDays = []
+                            } else {
+                                // 반복을 끄면 유효성 에러도 사라짐
+                                isInvalidRepeatSelection = false
+                                draftRepeatDays = [] 
+                            }
+                        }
+                },
+                editBottomContent: {
+                    if draftIsRepeatOn {
+                        HStack(spacing: 8) {
                             
-                            Text(day.label)
-                                .font(.body)
-                                .fontWeight(.bold)
-                                .padding(4)
-                                .background(
-                                    Circle()
-                                        .fill(
-                                            isOn ? Color(.systemBlue).opacity(0.25) : Color(.systemGray5)
-                                        )
-                                )
-                                .foregroundStyle(isOn ? .primary: .secondary)
+                            ForEach(DayOfWeek.allCases) { day in
+                                
+                                Button {
+                                    withAnimation(.easeInOut) {
+                                        if draftRepeatDays.contains(day.rawValue) {
+                                            draftRepeatDays.remove(day.rawValue)
+                                        } else {
+                                            draftRepeatDays.insert(day.rawValue)
+                                            //isInvalidSelection = false
+                                        }
+                                        
+                                        if !draftRepeatDays.isEmpty {
+                                            isInvalidRepeatSelection = false
+                                        }
+                                    }
+                                    
+                                } label: {
+                                    Text(day.label)
+                                        .font(.title3)
+                                        .padding(4)
+                                        .fontWeight(draftRepeatDays.contains(day.rawValue) ? .bold : .semibold)
+                                        .foregroundStyle(draftRepeatDays.contains(day.rawValue) ? Color.white : Color.secondary)
+                                        .background {
+                                            Circle()
+                                                .fill(draftRepeatDays.contains(day.rawValue) ? Color.accentColor : Color(.systemGray6))
+                                        }
+                                        //.padding(4)
+                                    
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .transition(.opacity.combined(with: .move(edge: .top)))
                         }
                     }
                 }
             )
-            
+            .overlay(
+                RoundedRectangle(cornerRadius: 20)
+                    .stroke(Color(.systemRed), lineWidth: isInvalidRepeatSelection ? 2 : 0)
+            )
+            .animation(.easeInOut, value: isInvalidRepeatSelection)
+           
             Divider().padding(.horizontal, 24)
             
+            // 알람
             infoRow(
                 label: "🔔 알람",
-                content: {
-                    if let time = habit.notification?.time {
+                isEditing: isEditing,
+                mainContent: {
+                    if habit.isAlarmOn {
+                        let time = draftAlarmData
                         Text(formattedTime(time))
                             .font(.title3)
                             .fontWeight(.bold)
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(Color(.label))
                     } else {
                         Text("설정 안함")
                             .font(.title3)
-                            .fontWeight(.bold)
                             .foregroundStyle(.secondary)
                     }
+                   
+                },
+                editTopContent: {
+                    // 레이블 옆에 바로 붙는 토글!
+                    Toggle("", isOn: $draftIsAlarmOn.animation(.spring()))
+                        .labelsHidden() // 레이블은 이미 "반복"이 있으므로 숨김
+                        .tint(.accentColor)
+                },
+                editBottomContent: {
+                    if draftIsAlarmOn {
+                        DatePicker("", selection: $draftAlarmData, displayedComponents: [.hourAndMinute])
+                            .labelsHidden()
+                            .datePickerStyle(.compact)
+                    }
+                        
                 }
             )
             .padding(.bottom, 12)
         }
+        .padding(.horizontal, 8)
         .background(
             RoundedRectangle(cornerRadius: 20)
                 .fill(
@@ -288,28 +454,37 @@ struct DetailHabit: View {
     
     // MARK: - 인포 섹션 공통 행 레이아웃
     @ViewBuilder
-    private func infoRow<Content: View>(
+    private func infoRow<MainContent: View, EditTopView: View, EditBottomView: View>(
         label: String,
-        @ViewBuilder content: () -> Content
+        isEditing: Bool,
+        @ViewBuilder mainContent: () -> MainContent,
+        @ViewBuilder editTopContent: () -> EditTopView = { EmptyView() } ,
+        @ViewBuilder editBottomContent: () -> EditBottomView
     ) -> some View {
-        HStack(alignment: .center, spacing: 12) {
-            Text(label)
-                .font(.subheadline)
-                .fontWeight(.bold)
-                .foregroundStyle(.secondary)
-            
-            Spacer()
-            
-            content()
+        VStack(spacing: 12) {
+            HStack(alignment: .center, spacing: 12) {
+                Text(label)
+                    .font(.subheadline)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.secondary)
+                
+                Spacer()
+                
+                if isEditing {
+                    editTopContent()
+                } else {
+                    mainContent()
+                }
+                
+            }
             
             if isEditing {
-                Image(systemName: "chevron.right")
-                    .font(.subheadline)
-                    .foregroundStyle(Color(.systemGray3))
+                editBottomContent()
             }
         }
         .padding(.horizontal, 24)
         .padding(.vertical, 12)
+        .contentShape(Rectangle())    // 터치 영역 확보
     }
     
     private var statSection: some View {
@@ -427,7 +602,64 @@ struct DetailHabit: View {
     }
     
     
-    // MARK: - 인포 섹션 (시간 포맷)
+    // MARK: - 로직
+    
+    private func loadDraft() {
+        self.draftTrigger = habit.selectedTriggerAction ?? "설정 안함"
+        self.draftIsRepeatOn = habit.isRepeatOn
+        
+        if habit.isRepeatOn {
+            self.draftRepeatDays = Set(habit.repeatDays)
+        } else {
+            self.draftRepeatDays = []
+        }
+        //self.draftIsRepeatOn = habit.isRepeatOn
+        // [수정] [Int] 배열을 Set<Int>로 변환하여 할당
+        //self.draftRepeatDays = Set(habit.repeatDays)
+        
+        self.draftIsAlarmOn = habit.isAlarmOn
+        self.draftAlarmData = habit.notification?.time ?? Date()
+    }
+    
+    private func startEdit() {
+        loadDraft()
+        isEditing = true
+    }
+    
+    func updateHabit() {
+        if draftIsRepeatOn && draftRepeatDays.isEmpty {
+            showValidationAlert = true    // 알람 띄우기
+            isInvalidRepeatSelection = true    // 테두리 켜기
+            return  // 함수 종료 - 저장은 안함
+        }
+        
+        habit.isRepeatOn = draftIsRepeatOn
+        
+        if draftIsRepeatOn {
+            // 반복습관으로 전환 또는 유지 => 사용자가 선택한 새로운 요일들로 교체
+            habit.repeatDays = Array(draftRepeatDays).sorted()
+        } else {
+            // 1회성습관으로 전환 또는 유지 => 기존 요일 무시하고 오늘 요일로 고정
+            let today = Calendar.current.component(.weekday, from: Date())
+            habit.repeatDays = [today]
+        }
+        
+        habit.selectedTriggerAction = draftTrigger
+        habit.isAlarmOn = draftIsAlarmOn
+        
+        if let notification = habit.notification {
+            notification.time = draftAlarmData
+        }
+        
+        // 저장 후 편집 모드 종료
+        withAnimation {
+            isInvalidRepeatSelection = false
+            isEditing = false
+        }
+        
+    }
+    
+    // 인포 섹션 (시간 포맷)
     private func formattedTime(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "a hh:mm"

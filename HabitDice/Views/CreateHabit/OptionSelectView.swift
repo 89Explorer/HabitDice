@@ -358,6 +358,12 @@ struct OptionSelectView: View {
         
         // 1. 모델 데이터 업데이트
         self.habit.isRepeatOn = isRepeatOn
+        
+        if !isRepeatOn {
+            let today = Calendar.current.component(.weekday, from: Date())
+            repeatDays = [today]
+        }
+        
         self.habit.repeatDays = repeatDays.sorted()
         self.habit.isAlarmOn = isAlarmOn
         

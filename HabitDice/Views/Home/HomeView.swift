@@ -85,22 +85,29 @@ struct HomeView: View {
     
     @ViewBuilder
     func habitListView() -> some View {
-        let weekday = Calendar.current.component(.weekday, from: currentDate)
-        
+                
         // 필터링 로직 강화
         // 1회성 습관 (반복 여부 -> false)과 n회성 습관 (반복 여부 -> true) 구분
         let todayHabits = habit.filter { item in
-            // 이미 졸업 (isArchived)인 습관은 제외
             guard !item.isArchived else { return false }
             
+            let weekday = Calendar.current.component(.weekday, from: currentDate)
             let containsWeekday = item.repeatDays.contains(weekday)
+            let isCreatedToday = Calendar.current.isDate(item.createdAt, inSameDayAs: currentDate)
             
-            if item.isRepeatOn {
-                return containsWeekday
-            } else {
-                // 1회성: 오늘 요일 포함 && 생성일이 오늘(currentDate)일 때만
-                return containsWeekday && Calendar.current.isDate(item.createdAt, inSameDayAs: currentDate)
+            // 1. 일단 오늘 요일에 해당하는 습관인가?
+            if containsWeekday {
+                if item.isRepeatOn {
+                    // 반복 습관이면 요일만 맞으면 OK
+                    return true
+                } else {
+                    // 일회성 습관이면 '오늘 만든 것'인지까지 확인
+                    return isCreatedToday
+                }
             }
+            
+            // "졸업은 안 했지만, 오늘 요일이 아닌" 습관들에 대비
+            return false
         }
         
         
