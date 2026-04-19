@@ -27,3 +27,21 @@ extension View {
     
     
 }
+
+
+extension View {
+    
+    func ColoredText(originalText: String, coloredText: String) -> Text {
+        let text = originalText
+        var attributedString = AttributedString(text)
+        
+        // coloredtext 부분 범위 찾기
+        if let range = attributedString.range(of: coloredText) {
+            // 해당 범위 색상, 폰트 변경
+            attributedString[range].foregroundColor = .blue
+            attributedString[range].font = .headline
+        }
+        
+        return Text(attributedString).font(.subheadline)
+    }
+}

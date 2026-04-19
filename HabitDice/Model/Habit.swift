@@ -58,9 +58,11 @@ final class Habit {
             
         }
     
+    // 특정 날짜에 습관을 완료했는지 확인하는 함수 
     func isCompletedOnDay(on date: Date) -> Bool {
-        return logs.first { log in
-            Calendar.current.isDate(log.date, inSameDayAs: date)}?.isDone ?? false
+        return self.logs.contains { log in
+            Calendar.current.isDate(log.date, inSameDayAs: date) && log.isDone
+        }
     }
     
     func habitArchive() {

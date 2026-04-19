@@ -241,10 +241,10 @@ struct HomeView: View {
             }
             
         }
-        .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color(.secondarySystemBackground))
-        )
+//        .background(
+//            RoundedRectangle(cornerRadius: 20)
+//                .fill(Color(.secondarySystemBackground))
+//        )
         .animation(.easeInOut(duration: 0.15), value: isTodayDone)
         .padding(2)
         
