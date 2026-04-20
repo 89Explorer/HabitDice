@@ -109,7 +109,11 @@ struct TodayView: View {
                 return "오늘 \(todayHabitCount)개의 습관이\n기다리고 있어요 🎯"
             }()
             
-            ColoredText(originalText: titleMessage, coloredText: "\(todayHabitCount)", originalFont: .subheadline, coloredFont: .headline)
+            ColoredText(
+                originalText: titleMessage,
+                coloredText: "\(todayHabitCount)",
+                originalFont: .subheadline,
+                coloredFont: .headline)
                 .fontWeight(.bold)
             
             // 진행 바 영역 분기 처리
@@ -122,7 +126,7 @@ struct TodayView: View {
                         originalText: "\(todayCompletedCount) / \(todayHabitCount) 완료",
                         coloredText: "\(todayCompletedCount)",
                         originalFont: .caption2,
-                        coloredFont: .caption
+                        coloredFont: .callout
                     )
                     .fontWeight(.medium)
                 }
@@ -224,7 +228,7 @@ struct TodayView: View {
                             originalText: "\(habit.logs.filter { $0.isDone }.count) / \(habit.repeatDays.count) 이번 주",
                             coloredText: "\(habit.logs.filter { $0.isDone }.count)",
                             originalFont: .caption2,
-                            coloredFont: .caption
+                            coloredFont: .callout
                         )
                     }
                     
@@ -316,6 +320,8 @@ struct TodayView: View {
                         dayProgressColumn(day: day, habits: habit)
                     }
                 }
+                
+                Divider()
                
             }
             .padding(16)
@@ -330,7 +336,7 @@ struct TodayView: View {
     }
     
     
-    // MARK: - 요일 별 완료 습관 건수 / 전체 습관 건수를 표시하는 뷰
+    // MARK: - 요일 별 완료 습관 건수 / 전체 습관 건수를 표시하는 뷰 (이번 주 흐름 뷰에서 사용)
     private func dayProgressColumn(day: DayOfWeek, habits: [Habit]) -> some View {
         // 해당 요일에 해야 할 전체 습관 필터링
         let totalHabitsForDay = habits.filter { $0.repeatDays.contains(day.rawValue) }.count
@@ -340,7 +346,7 @@ struct TodayView: View {
         let completedHabitsForDay = habits.reduce(0) { count, habit in
             let doneInDay = habit.logs.contains { log in
                 // 로그의 날짜가 이 요일(day)와 일치하고 완료되었는지 확인
-                Calendar.current.component(.weekday, from: log.date) == day.rawValue
+                Calendar.current.component(.weekday, from: log.date) == day.rawValue && log.isDone
             }
             return count + (doneInDay ? 1 : 0)
         }
@@ -377,8 +383,8 @@ struct TodayView: View {
                 
                 // 완료 숫자
                 Text("\(completedHabitsForDay)")
-                    .font(.headline)
-                    .fontWeight(.bold)
+                    .font(isToday ? .title3 : .callout)
+                    .fontWeight(isToday ? .bold : .regular)
                     .foregroundStyle(.primary)
             }
             
@@ -400,6 +406,8 @@ struct TodayView: View {
         }
         .hSpacing(.center)
     }
+    
+    
     
     
     
