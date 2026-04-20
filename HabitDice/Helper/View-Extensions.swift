@@ -31,7 +31,7 @@ extension View {
 
 extension View {
     
-    func ColoredText(originalText: String, coloredText: String) -> Text {
+    func ColoredText(originalText: String, coloredText: String, originalFont: Font, coloredFont: Font) -> Text {
         let text = originalText
         var attributedString = AttributedString(text)
         
@@ -39,9 +39,9 @@ extension View {
         if let range = attributedString.range(of: coloredText) {
             // 해당 범위 색상, 폰트 변경
             attributedString[range].foregroundColor = .blue
-            attributedString[range].font = .headline
+            attributedString[range].font = coloredFont
         }
         
-        return Text(attributedString).font(.subheadline)
+        return Text(attributedString).font(originalFont)
     }
 }
