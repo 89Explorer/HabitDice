@@ -72,6 +72,10 @@ struct TodayView: View {
                     todayHabitListView
                         .padding(.top, 12)
                         .padding(.horizontal, 20)
+                    
+                    WeeklyFlowView
+                        .padding(.top, 12)
+                        .padding(.horizontal, 20)
                 }
             }
             .navigationTitle("✨오늘 하루도 힘내세요")
@@ -149,10 +153,25 @@ struct TodayView: View {
                 .foregroundStyle(.secondary)
             
             VStack(alignment: .leading, spacing: 8) {
-                ForEach(todayHabits) { item in
-                    habitCardView(item)
-                    
-                    Divider()
+                
+                if habit.isEmpty {
+                    emptyHabitView(
+                        icon: "plus.circle",
+                        message: "아직 습관이 없네요 🌱",
+                        subMessage: "첫 번째 습관을 만들어, 작은 변화를 시작해보세요 🍀"
+                    )
+                } else if todayHabits.isEmpty {
+                    emptyHabitView(
+                        icon: "moon.stars",
+                        message: "오늘은 쉬어가는 날이에요 🌙",
+                        subMessage: "내일의 습관을 위해 충분히 쉬세요 ☁️"
+                    )
+                } else {
+                    ForEach(todayHabits) { item in
+                        habitCardView(item)
+                        
+                        Divider()
+                    }
                 }
             }
             .hSpacing(.leading)
@@ -259,6 +278,129 @@ struct TodayView: View {
             }
         }
     }
+    
+    
+    // MARK: - 오늘 습관 리스트 또는 습관 자체가 없을 경우 보여줄 emptyView
+    private func emptyHabitView(icon: String, message: String, subMessage: String) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 28))
+                .foregroundStyle(.blue)
+            
+            Text(message)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .foregroundStyle(Color(.label))
+            
+            Text(subMessage)
+                .font(.caption)
+                .foregroundStyle(Color(.secondaryLabel))
+                .multilineTextAlignment(.center)
+        }
+        .hSpacing(.center)
+        .padding(.vertical, 8)
+    }
+    
+    
+    // MARK: - 이번 주 흐름을 보여주는 뷰
+    private var WeeklyFlowView: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("이번 주 흐름")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+            
+            VStack(spacing: 8) {
+                HStack(alignment: .top) {
+                    ForEach(DayOfWeek.allCases) { day in
+                        // 전체 습관 리스트
+                        dayProgressColumn(day: day, habits: habit)
+                    }
+                }
+               
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(
+                        Color(.systemBackground)
+                    )
+            )
+        }
+
+    }
+    
+    
+    // MARK: - 요일 별 완료 습관 건수 / 전체 습관 건수를 표시하는 뷰
+    private func dayProgressColumn(day: DayOfWeek, habits: [Habit]) -> some View {
+        // 해당 요일에 해야 할 전체 습관 필터링
+        let totalHabitsForDay = habits.filter { $0.repeatDays.contains(day.rawValue) }.count
+        
+        // 해당 요일에 완료한 습관 개수 계산
+        // 이번주 리스트이므로 logs 내의 요일 정보와 매칭
+        let completedHabitsForDay = habits.reduce(0) { count, habit in
+            let doneInDay = habit.logs.contains { log in
+                // 로그의 날짜가 이 요일(day)와 일치하고 완료되었는지 확인
+                Calendar.current.component(.weekday, from: log.date) == day.rawValue
+            }
+            return count + (doneInDay ? 1 : 0)
+        }
+        
+        // 오늘 여부 확인
+        let isToday = Calendar.current.component(.weekday, from: currentDate) == day.rawValue
+        
+        // 달성률 (0.0 ~ 1.0)
+        let rate = totalHabitsForDay > 0 ? Double(completedHabitsForDay) / Double(totalHabitsForDay) : 0.0
+        
+        return VStack(spacing: 8) {
+            // 요일 레이블
+            Text(day.label)
+                .font(.caption)
+                .fontWeight(isToday ? .bold : .regular)
+                .foregroundStyle(isToday ? Color.blue : Color.secondary)
+            
+            // 원형 게이지 (Bottom-up Fill)
+            ZStack(alignment: .center) {
+                ZStack(alignment: .bottom) {
+                    Circle()
+                        .fill(Color.gray.opacity(0.3))
+                        .frame(width: 40, height: 40)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.gray, lineWidth: 3.0))
+                    
+                    // 아래에서 위로 차오르는 파란색 원
+                    Rectangle()
+                        .fill(Color.blue)
+                        .frame(width: 40, height: min(40 * rate, 40))
+                }
+                .clipShape(Circle())
+                
+                // 완료 숫자
+                Text("\(completedHabitsForDay)")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.primary)
+            }
+            
+            // 하단 상태 텍스트
+            Group {
+                if isToday {
+                    Text("진행중")
+                        .foregroundStyle(.blue)
+                        .fontWeight(.bold)
+                } else if totalHabitsForDay == 0 {
+                    Text("없음")
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("\(totalHabitsForDay)개")
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .font(.footnote)
+        }
+        .hSpacing(.center)
+    }
+    
     
     
     // MARK: - 습관 완료 버튼
