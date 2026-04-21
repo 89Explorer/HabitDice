@@ -16,6 +16,8 @@ struct TodayView: View {
     @Query(sort: \Habit.createdAt) private var habit: [Habit]    // Swift Data에 저장된 습관 데이터를 생성일 기준으로 불러오는 변수
     @Environment(HabitRepository.self) var habitRepository    // 습관 데이터를 관리하는 매니저 역할
     
+    
+    
     // MARK: - 필터링된 습관 리스트 (Computed Properties)
     // 오늘 요일에 해당하면서 반복 습관 + 일회성 습관 필터링하여 담는 변수
     private var todayHabits: [Habit] {
@@ -57,6 +59,55 @@ struct TodayView: View {
     }
     
     
+    // 연속일 계산 프로퍼티
+    private var currentStreak: Int {
+        var streak = 0
+        var daysAgo = 0
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: currentDate)
+        
+        // 기록이 끊길 때까지 무한히 과거로 탐색
+        while true {
+            guard let dateToCheck = calendar.date(byAdding: .day, value: -daysAgo, to: today) else { break }
+            
+            // 1. 해당 날짜에 해야 할 습관 필터링
+            let habitsOnThatDay = habit.filter { h in
+                let weekday = calendar.component(.weekday, from: dateToCheck)
+                let isRepeatDay = h.repeatDays.contains(weekday)
+                let isCreatedBefore = calendar.startOfDay(for: h.createdAt) <= dateToCheck
+                return !h.isArchived && isRepeatDay && isCreatedBefore
+            }
+            
+            // 2. 쉬는 날이면 카운트 유지하고 계속 진행
+            if habitsOnThatDay.isEmpty {
+                daysAgo += 1
+                continue
+            }
+            
+            // 3. 습관이 있는 날 완료 여부 확인
+            let isDone = habitsOnThatDay.contains { h in
+                h.logs.contains { log in
+                    calendar.isDate(log.date, inSameDayAs: dateToCheck) && log.isDone
+                }
+            }
+            
+            if isDone {
+                streak += 1
+                daysAgo += 1
+            } else {
+                // 오늘(daysAgo == 0)인데 아직 안 한 거면 계속 탐색,
+                // 하지만 과거 날짜인데 안 한 거면 여기서 스트릭 종료!
+                if daysAgo > 0 { break }
+                daysAgo += 1
+            }
+            
+            // 안전장치: 혹시 모를 무한 루프 방지 (예: 10년치)
+            if daysAgo > 3650 { break }
+        }
+        return streak
+    }
+    
+    
     var body: some View {
         
         NavigationStack {
@@ -74,6 +125,10 @@ struct TodayView: View {
                         .padding(.horizontal, 20)
                     
                     WeeklyFlowView
+                        .padding(.top, 12)
+                        .padding(.horizontal, 20)
+                    
+                    habitInventoryView
                         .padding(.top, 12)
                         .padding(.horizontal, 20)
                 }
@@ -251,13 +306,14 @@ struct TodayView: View {
                                 .foregroundStyle(isTodayDone ? .white : .blue)
                         }
                     }
+                    .disabled(isTodayDone)
                 }
             }
             .blur(radius: isTodayDone ? 4.0 : 0.0)    // 완료 시 블러 처리
             .opacity(isTodayDone ? 0.6 : 1.0)    // 블러와 함께 투명도 조절 시 더 고급스러움
             
             // --- 다시하기 버튼 (완료 시에만 노출) ---
-            if isTodayDone {
+            if isTodayDone {			
                 Button {
                     withAnimation(.spring()) {
                         toggleCompletion(for: habit) // 다시 누르면 false가 됨
@@ -313,7 +369,7 @@ struct TodayView: View {
                 .font(.headline)
                 .foregroundStyle(.secondary)
             
-            VStack(spacing: 8) {
+            VStack(spacing: 12) {
                 HStack(alignment: .top) {
                     ForEach(DayOfWeek.allCases) { day in
                         // 전체 습관 리스트
@@ -322,6 +378,8 @@ struct TodayView: View {
                 }
                 
                 Divider()
+                
+                streakStatusView
                
             }
             .padding(16)
@@ -362,17 +420,17 @@ struct TodayView: View {
             Text(day.label)
                 .font(.caption)
                 .fontWeight(isToday ? .bold : .regular)
-                .foregroundStyle(isToday ? Color.blue : Color.secondary)
-            
+                .foregroundStyle(isToday ? Color.yellow : Color.secondary)
+                
             // 원형 게이지 (Bottom-up Fill)
             ZStack(alignment: .center) {
                 ZStack(alignment: .bottom) {
                     Circle()
-                        .fill(Color.gray.opacity(0.3))
+                        .fill(Color.gray.opacity(0.1))
                         .frame(width: 40, height: 40)
                         .overlay(
                             Circle()
-                                .stroke(Color.gray, lineWidth: 3.0))
+                                .stroke(Color.blue, lineWidth: 1.0))
                     
                     // 아래에서 위로 차오르는 파란색 원
                     Rectangle()
@@ -392,7 +450,7 @@ struct TodayView: View {
             Group {
                 if isToday {
                     Text("진행중")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(.yellow)
                         .fontWeight(.bold)
                 } else if totalHabitsForDay == 0 {
                     Text("없음")
@@ -408,7 +466,145 @@ struct TodayView: View {
     }
     
     
+    // MARK: - 연속 일에 대한 안내멘트를 보여주는 뷰 (이번 주 흐름 뷰에서 사용)
+    private var streakStatusView: some View {
+        
+        // 현재 연속일을 넣어 StreakLevel 인스턴스 생성
+        let level = StreakLevel(count: currentStreak)
+        
+        return HStack {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    Image(systemName: "flame.fill")
+                        .foregroundStyle(.red)
+                    
+                    ColoredText(
+                        originalText: "\(currentStreak) 일 연속",
+                        coloredText: "\(currentStreak)",
+                        originalFont: .caption,
+                        coloredFont: .title3
+                    )
+                        .fontWeight(.bold)
+                }
+                
+                // 연속 일수에 따른 메시지 출력
+                Text(level.mainMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.primary)
+                
+                Text(level.subMessage)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .padding(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.orange.opacity(0.1))
+                    )
+            }
+            
+            Spacer()
+            
+            VStack(spacing: 8) {
+                Text("🔥")
+                    .font(.system(size: level.fontSize))
+                    .phaseAnimator([0, 1]) { content, phase in
+                            content
+                                .scaleEffect(phase == 1 ? 1.05 : 0.95) // 살짝 커졌다 작아졌다
+                                .offset(y: phase == 1 ? -3 : 0)        // 위아래로 일렁임
+                        } animation: { phase in
+                            .easeInOut(duration: 1.0).repeatForever(autoreverses: true)
+                        }
+                
+                
+                Text(level.name)
+                    .font(.footnote)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 4)
+                    .background(Capsule().fill(Color.orange.opacity(0.2)))
+                    .foregroundStyle(.orange)
+            }
+            
+        }
+        .hSpacing(.leading)
+    }
     
+    
+    // MARK: - 전체 습관 리스트 뷰 (반복 습관, 일회성 습관 갯수 표시)
+    private var habitInventoryView: some View {
+        // 필요한 데이터 확인
+        let activeHabits = habit.filter { !$0.isArchived }
+        let archivedCount = habit.filter { $0.isArchived }.count
+        let status = HabitStatus(
+            activeCount: activeHabits.count,
+            archivedCount: archivedCount
+        )
+        
+        return VStack(alignment: .leading, spacing: 4) {
+            Text("습관 인벤토리")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+            
+            VStack(alignment: .leading, spacing: 12) {
+                
+                ColoredText(
+                    originalText: "지금까지 총 \(habit.count) 개의 습관과 함께하고 있어요",
+                    coloredText: "\(habit.count)",
+                    originalFont: .subheadline,
+                    coloredFont: .headline
+                )
+                
+                // 전체 및 진행 중 습관
+                VStack(alignment: .leading, spacing: 8) {
+                    ColoredText(
+                        originalText: "오늘도 함께 달리는 습관 🎯 \(activeHabits.count) 개",
+                        coloredText: "\(activeHabits.count)",
+                        originalFont: .caption,
+                        coloredFont: .title3
+                    )
+                    
+                    Text(status.activeMessage)
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.secondary)
+                        .padding(8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.orange.opacity(0.1))
+                        )
+                        //.fixedSize(horizontal: false, vertical: false)
+                }
+                
+                Divider()
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    ColoredText(
+                        originalText: "내 몸에 완벽히 배어 졸업한 습관 🎓 \(archivedCount) 개",
+                        coloredText: "\(archivedCount) ",
+                        originalFont: .caption,
+                        coloredFont: .title3
+                    )
+                    
+                    Text(status.archivedMessage)
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.secondary)
+                        .padding(8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.orange.opacity(0.1))
+                        )
+                }
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(
+                        Color(.systemBackground)
+                    )
+            )
+        }
+        
+    }
     
     
     // MARK: - 습관 완료 버튼

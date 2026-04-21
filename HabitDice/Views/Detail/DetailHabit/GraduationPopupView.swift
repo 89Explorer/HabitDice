@@ -46,7 +46,7 @@ struct GraduationPopupView: View {
                     .padding(.bottom, 20)
                 
                 HStack(spacing: 0) {
-                    statItem(value: "\(habit.daysSinceCreation)회", label: "도전 기간")
+                    statItem(value: "\(habit.daysSinceCreation)회", label: "도전 횟수")
                     Divider().frame(height: 40)
                     statItem(value: "\(habit.monthlyCompletedCount)회", label: "완료 횟수")
                     Divider().frame(height: 40)

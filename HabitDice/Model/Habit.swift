@@ -406,3 +406,56 @@ extension Habit {
     }
 }
 
+
+//
+//struct HabitStatus {
+//    let activeCount: Int
+//    let archivedCount: Int
+//    
+//    // 진행 중 습관 멘트
+//    var activeMessage: String {
+//        switch activeCount {
+//        case 0: return "새로운 도전을 시작해볼까요?"
+//        case 1...2: return "작심삼일도 10번이면 한 달! 일단 하나에만 집중해봐요."
+//        case 3...4: return "나만의 루틴이 쌓이고 있네요. 소소한 성공이 인생을 바꿉니다."
+//        default: return "주도적인 삶을 살고 계시군요! 당신의 하루는 남들보다 가치 있어요."
+//        }
+//    }
+//    
+//    // 졸업 습관 멘트
+//    var archivedMessage: String {
+//        switch archivedCount {
+//            case 0: return "아직 졸업한 습관이 없지만, 곧 첫 결실을 맺을 거예요!"
+//            case 1...3: return "벌써 습관의 싹이 텄네요. 졸업한 기록들이 당신의 자산입니다."
+//            case 4...7: return "단단한 뿌리가 생겼어요. 이제 어떤 습관도 두렵지 않죠?"
+//            default: return "전설적인 루티너! 당신의 성실함이 기적을 만들었습니다."
+//        }
+//    }
+//}
+
+
+// MARK: - 진행 중, 졸업한 습관의 갯수에 따른 응원 멘트
+struct HabitStatus {
+    let activeCount: Int
+    let archivedCount: Int
+    
+    // 진행 중 습관 멘트: 현재의 노력에 집중
+    var activeMessage: String {
+        switch activeCount {
+        case 0: return "지금은 잠시 숨을 고르는 중인가요?\n새로운 도전을 시작할 준비가 되면 언제든 알려주세요! 😊"
+        case 1...2: return "작심삼일도 열 번이면 한 달이 된대요.\n지금처럼 하나씩 가볍게, 나만의 속도로 걸어가 봐요! 🌱"
+        case 3...4: return "벌써 근사한 루틴이 만들어지고 있네요!\n차곡차곡 쌓인 오늘의 노력이 내일의 당신을 바꿀 거예요. ✨"
+        default: return "와, 정말 열정적인 하루를 보내고 계시군요!\n당신의 주도적인 삶이 주변까지 밝게 비추고 있어요. 🔥"
+        }
+    }
+    
+    // 졸업 습관 멘트: 과거의 결실을 축하
+    var archivedMessage: String {
+        switch archivedCount {
+        case 0: return "아직 졸업한 습관은 없지만, 매일 조금씩 성장하는 중이에요.\n첫 번째 졸업장이 곧 도착할 거예요! 🎓"
+        case 1...3: return "첫 결실의 기쁨을 기억하시나요?\n졸업한 습관들은 이제 당신의 든든한 뿌리가 되어줄 거예요. 🌳"
+        case 4...7: return "단단한 내공이 느껴져요!\n벌써 여러 개의 습관을 정복한 당신은 이미 자기관리의 고수네요. 🏆"
+        default: return "전설적인 루티너의 탄생!\n당신이 걸어온 길 자체가 하나의 기적이자 완벽한 루틴입니다. 👑"
+        }
+    }
+}
