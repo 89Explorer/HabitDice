@@ -17,11 +17,15 @@ struct DetailHabit: View {
     @State private var currentDate: Date = .init()
     
     @State private var showGraduateSheet: Bool = false     // 습관 졸업(완료) 여부를 제어하는 변수
+    @State private var showGraduateCompleted: Bool = false
+    
     @State private var isEditing: Bool = false    // 수정 여부를 제어하는 변수
     @State private var showExitAlert: Bool = false    // 수정 중일 경우에 뒤로가기 전 안내창을 제어하는 변수
     @State private var showValidationAlert: Bool = false    // 요일 미선택 경고용 변수
     @State private var isInvalidRepeatSelection: Bool = false    // 빨간 테두리 전용 변수
     @State private var showAuthAlert: Bool = false // 알람 권한 설정 Alert 제어용 변수
+    
+    @State private var isShowingDeleteAlert: Bool = false    // 삭제할 때 알람창 띄우는 변수
     
     @FocusState private var isFocused: Bool    // 포커스 상태 정의 (키보드 내리기)
     
@@ -34,13 +38,6 @@ struct DetailHabit: View {
     @State private var draftIsRepeatOn: Bool = false
     @State private var draftIsAlarmOn: Bool = false
     @State private var draftAlarmData: Date = Date()
-    
-    // MARK: - 계산 프로퍼티
-    
-    // 습관 생성일로부터 오늘까지 며칠 쨰인지 제어하는 변수
-//    private var daysSinceCreation: Int {
-//        Calendar.current.dateComponents([.day], from: habit.createdAt, to: Date()).day ?? 0
-//    }
     
     
     var body: some View {
@@ -60,7 +57,7 @@ struct DetailHabit: View {
                     
                     infoSection
                         .scaleEffect(isEditing ? 1.02 : 1.0)
-                        //.shadow(color: .black.opacity(isEditing ? 0.15 : 0), radius: 10, x: 0, y: 10) // 띄워진 느낌 추가
+                    //.shadow(color: .black.opacity(isEditing ? 0.15 : 0), radius: 10, x: 0, y: 10) // 띄워진 느낌 추가
                     
                     statSection
                         .blur(radius: isEditing ? 5 : 0)
@@ -108,7 +105,7 @@ struct DetailHabit: View {
                     Button("완료", systemImage: "checkmark") {
                         withAnimation(.easeInOut) {
                             updateHabit()
-                            //isEditing = false
+                            
                         }
                     }
                     .fontWeight(.bold)
@@ -123,7 +120,7 @@ struct DetailHabit: View {
                         }
                         
                         Button(role: .destructive) {
-                            // 삭제 로직
+                            isShowingDeleteAlert = true    // 바로 삭제하지 않고 알람창 띄움
                         } label: {
                             Label("삭제하기", systemImage: "trash")
                         }
@@ -142,9 +139,44 @@ struct DetailHabit: View {
                 }
             }
         }
-        .overlay {
+        .fullScreenCover(isPresented: $showGraduateCompleted) {
+            
+            ZStack {
+                Color(.systemBackground)
+                    .ignoresSafeArea()
+                ConfettiView()
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+                GraduationPopupView(habit: habit) {
+                    doGraduate()
+                    dismiss()
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity)) // 아래서 위로 슥!
+            }
+            .animation(.spring(response: 0.6, dampingFraction: 0.8), value: showGraduateCompleted)
             
         }
+        .sheet(isPresented: $showGraduateSheet) {
+            GraduateConfirmSheet(
+                habitTitle: habit.title,
+                onGraduate: {
+                    // 시트를 먼저 닫는다.
+                    showGraduateSheet = false
+                    
+                    // 아주 짧은 지연 시간을 주어 시트가 닫히는 애니메이션이 시작된 후 팝업을 띄운다.
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        withAnimation(.spring()) {
+                            showGraduateCompleted = true
+                        }
+                    }
+                } , onCancel: {
+                    showGraduateSheet = false
+                }
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        }
+        .animation(.easeInOut(duration: 0.25), value: showGraduateCompleted)
         // 🔥 저장하지 않고 나갈 때의 확인 창
         .confirmationDialog(
             "변경사항을 저장할까요? 🛠️",
@@ -161,17 +193,14 @@ struct DetailHabit: View {
         } message: {
             Text("편집 중인 내용이 있습니다. 지금 나가시면 모든 변경사항이 취소됩니다.")
         }
-        .sheet(isPresented: $showGraduateSheet) {
-            GraduateConfirmSheet(
-                habitTitle: habit.title,
-                onGraduate: {
-                    
-                } , onCancel: {
-                    showGraduateSheet = false
-                }
-            )
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
+        .alert("습관 삭제", isPresented: $isShowingDeleteAlert) {
+            Button("취소", role: .cancel) { }
+            Button("삭제", role: .destructive) {
+                self.deleteHabit(habit)
+                dismiss()
+            }
+        } message: {
+            Text("정말 이 습관을 삭제 하시겠어요?\n삭제하면 그 동안 쌓인 기록들도 모두 사라집니다.")
         }
         .alert("요일을 선택해주세요", isPresented: $showValidationAlert) {
             Button("확인", role: .cancel) { }
@@ -385,7 +414,7 @@ struct DetailHabit: View {
                                             Circle()
                                                 .fill(draftRepeatDays.contains(day.rawValue) ? Color.accentColor : Color(.systemGray6))
                                         }
-                                        //.padding(4)
+                                    //.padding(4)
                                     
                                 }
                                 .buttonStyle(.plain)
@@ -400,7 +429,7 @@ struct DetailHabit: View {
                     .stroke(Color(.systemRed), lineWidth: isInvalidRepeatSelection ? 2 : 0)
             )
             .animation(.easeInOut, value: isInvalidRepeatSelection)
-           
+            
             Divider().padding(.horizontal, 24)
             
             // 알람
@@ -419,7 +448,7 @@ struct DetailHabit: View {
                             .font(.title3)
                             .foregroundStyle(.secondary)
                     }
-                   
+                    
                 },
                 editTopContent: {
                     // 레이블 옆에 바로 붙는 토글!
@@ -449,7 +478,7 @@ struct DetailHabit: View {
                             .labelsHidden()
                             .datePickerStyle(.compact)
                     }
-                        
+                    
                 }
             )
             .padding(.bottom, 12)
@@ -658,6 +687,9 @@ struct DetailHabit: View {
     
     private func doGraduate() {
         habit.habitArchive()
+        withAnimation(.easeInOut) {
+            showGraduateCompleted = false
+        }
     }
     
     func updateHabit() {
@@ -719,7 +751,7 @@ struct DetailHabit: View {
                 }
             }
         }
-
+        
     }
     
     // 인포 섹션 (시간 포맷)
@@ -728,6 +760,25 @@ struct DetailHabit: View {
         formatter.dateFormat = "a hh:mm"
         formatter.locale = Locale(identifier: "ko_KR")
         return formatter.string(from: date)
+    }
+    
+    
+    // MARK: - 습관 삭제 로직 (관련 습관 기록와 알람 삭제, 단 알람은 Notification에서도 삭제할 것)
+    func deleteHabit(_ habit: Habit) {
+        // 예약된 알람이 있다면 안전하게 추출하여 취소
+        if let notification = habit.notification {
+            container.notificationRepository.cancelNotification(notification: notification)
+        }
+        
+        // 데이터 삭제
+        container.context.delete(habit)
+        
+        // 변경 사항 저장
+        do {
+            try container.context.save()
+        } catch {
+            print("결과 저장 중 오류 발생: \(error.localizedDescription)")
+        }
     }
 }
 

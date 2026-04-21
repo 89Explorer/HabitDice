@@ -19,7 +19,7 @@ struct GraduationPopupView: View {
     var body: some View {
         
         ZStack {
-            Color(.secondarySystemBackground).ignoresSafeArea()
+            Color(.clear).ignoresSafeArea()
             
             VStack(spacing: 0) {
                 Text("🎉")

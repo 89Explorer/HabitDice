@@ -255,8 +255,12 @@ struct TodayView: View {
                     )
                 } else {
                     ForEach(todayHabits) { item in
-                        habitCardView(item)
                         
+                        NavigationLink {
+                            DetailHabit(habit: item)
+                        } label: {
+                            habitCardView(item)
+                        }
                         Divider()
                     }
                 }
@@ -559,7 +563,7 @@ struct TodayView: View {
                     .foregroundStyle(.orange)
 
             }
-            .animation(.none, value: habit.count) // 데이터가 바뀔 때 이 영역은 '튀는' 애니메이션을 하지 않음
+            .animation(.none, value: todayHabits.count) // 데이터가 바뀔 때 이 영역은 '튀는' 애니메이션을 하지 않음
             
         }
         .hSpacing(.leading)
