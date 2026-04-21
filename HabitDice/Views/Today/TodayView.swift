@@ -16,6 +16,10 @@ struct TodayView: View {
     @Query(sort: \Habit.createdAt) private var habit: [Habit]    // Swift Data에 저장된 습관 데이터를 생성일 기준으로 불러오는 변수
     @Environment(HabitRepository.self) var habitRepository    // 습관 데이터를 관리하는 매니저 역할
     
+    @State private var isPresentingCreateView: Bool = false
+    
+    @Namespace private var flame
+    
     
     
     // MARK: - 필터링된 습관 리스트 (Computed Properties)
@@ -135,14 +139,38 @@ struct TodayView: View {
             }
             .navigationTitle("✨오늘 하루도 힘내세요")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        print("달력 탭")
-                    } label: {
-                        Image(systemName: "calendar")
-                    }
+            .overlay(alignment: .bottomTrailing) {
+                Button {
+                    isPresentingCreateView.toggle()
+                } label: {
+                    // 🔥 디자인 포인트 1: 아이콘과 그라데이션 배경
+                    Image(systemName: "plus")
+                        .font(.system(size: 24, weight: .bold)) // 아이콘을 더 크고 굵게
+                        .foregroundStyle(.white)
+                        .padding(16) // 정사각형 형태를 위한 여백
+                        .background(
+                            // 🔥 디자인 포인트 2: 주사위 같은 그라데이션과 둥근 모서리
+                            RoundedRectangle(cornerRadius: 16) // 더 둥글게 처리
+                                .fill(
+                                    LinearGradient(
+                                        gradient: Gradient(
+                                            colors: [Color.blue.opacity(0.2), Color.blue.opacity(0.6), Color.blue]
+                                        ),
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                        )
+                        // 🔥 디자인 포인트 3: 입체감을 주는 부드러운 그림자
+                        //.shadow(color: Color.blue.opacity(0.3), radius: 10, x: 0, y: 6)
                 }
+                .padding(.trailing, 24)
+                .padding(.bottom, 24) // 하단 여백 추가로 띄우기
+                // 🔥 디자인 포인트 4: 버튼 자체에 호버/인터랙션 효과 추가 (iOS 17+)
+                .buttonStyle(DiceButtonStyle())
+            }
+            .fullScreenCover(isPresented: $isPresentingCreateView) {
+                HabitCreateContainerView()
             }
         }
         
@@ -370,6 +398,9 @@ struct TodayView: View {
                 .foregroundStyle(.secondary)
             
             VStack(spacing: 12) {
+                
+                
+                
                 HStack(alignment: .top) {
                     ForEach(DayOfWeek.allCases) { day in
                         // 전체 습관 리스트
@@ -380,6 +411,7 @@ struct TodayView: View {
                 Divider()
                 
                 streakStatusView
+               
                
             }
             .padding(16)
@@ -474,6 +506,7 @@ struct TodayView: View {
         
         return HStack {
             VStack(alignment: .leading, spacing: 8) {
+                
                 HStack(spacing: 8) {
                     Image(systemName: "flame.fill")
                         .foregroundStyle(.red)
@@ -507,14 +540,16 @@ struct TodayView: View {
             VStack(spacing: 8) {
                 Text("🔥")
                     .font(.system(size: level.fontSize))
+                    .id("STREAK_FLAME_\(currentStreak)")    // 상태 유지 목적
                     .phaseAnimator([0, 1]) { content, phase in
-                            content
-                                .scaleEffect(phase == 1 ? 1.05 : 0.95) // 살짝 커졌다 작아졌다
-                                .offset(y: phase == 1 ? -3 : 0)        // 위아래로 일렁임
-                        } animation: { phase in
-                            .easeInOut(duration: 1.0).repeatForever(autoreverses: true)
-                        }
-                
+                                content
+                                    .scaleEffect(phase == 1 ? 1.03 : 1.0, anchor: .bottom)
+                                    .offset(y: phase == 1 ? -2 : 0)
+                            } animation: { phase in
+                                .easeInOut(duration: 1.5).repeatForever(autoreverses: true)
+                            }
+                            .frame(maxHeight: 100) // 불꽃이 움직일 수 있는 충분한 '공간'을 미리 고정
+                            .contentShape(Rectangle()) // 터치 영역 혹은 레이아웃 안정성 확보
                 
                 Text(level.name)
                     .font(.footnote)
@@ -522,7 +557,9 @@ struct TodayView: View {
                     .padding(.vertical, 4)
                     .background(Capsule().fill(Color.orange.opacity(0.2)))
                     .foregroundStyle(.orange)
+
             }
+            .animation(.none, value: habit.count) // 데이터가 바뀔 때 이 영역은 '튀는' 애니메이션을 하지 않음
             
         }
         .hSpacing(.leading)
@@ -627,6 +664,16 @@ struct TodayView: View {
             // 관계에 추가
             habit.logs.append(newHabitLog)
         }
+    }
+}
+
+
+// MARK: - 추가 버튼 효과
+struct DiceButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.9 : 1.0) // 눌렀을 때 살짝 작아짐
+            .animation(.spring(response: 0.4, dampingFraction: 0.6), value: configuration.isPressed)
     }
 }
 
