@@ -26,13 +26,13 @@ struct GraduationPopupView: View {
                     .font(.system(size: 48))
                     .padding(.bottom,12)
                 
-                Text("습관 졸업을 축하해요!")
-                    .font(.system(size: 20))
+                Text("졸업을 축하해요!")
+                    .font(.title3)
                     .fontWeight(.bold)
                     .padding(.bottom, 8)
                 
                 Text("\(habit.title)")
-                    .font(.system(size: 24))
+                    .font(.title)
                     .fontWeight(.bold)
                     .foregroundStyle(.secondary)
                     .padding(12)
@@ -67,7 +67,8 @@ struct GraduationPopupView: View {
                     onDismiss()
                 } label: {
                     Text("메인으로 돌아가기")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.title3)
+                        .fontWeight(.semibold)
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 13)

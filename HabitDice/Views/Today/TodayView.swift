@@ -15,16 +15,24 @@ struct TodayView: View {
     
     @Query(sort: \Habit.createdAt) private var habit: [Habit]    // Swift Data에 저장된 습관 데이터를 생성일 기준으로 불러오는 변수
     @Environment(HabitRepository.self) var habitRepository    // 습관 데이터를 관리하는 매니저 역할
+    @Environment(\.scenePhase) var scenePhase    // 앱의 상태 감지 (연속일 체크 목적 - checkYesterdayStreak)
     
     @State private var isPresentingCreateView: Bool = false
+    @State private var isPresentingStreakResetView: Bool = false    // 연속일이 깨졌을 떄 보여주는 안내 시트 제어하는 변수
+    @State private var lastBrokenStreak: Int = 0    // 깨지기 전 스트릭 저장용
     
     @Namespace private var flame
     
-    
+    @AppStorage("currentStreak") private var currentStreak: Int = 0    // 현재 연속일을 저장하는 변수
+    @AppStorage("bestStreak") private var bestStreak: Int = 0    // 연속일 중에 최장 연속일을 저장하는 변수
+    @AppStorage("hasAcknowledgedReset") private var hasAcknowledgedReset: Bool = false    // 연속일이 깨졌을 경우에 대비한 안내뮤 보이기
     
     // MARK: - 필터링된 습관 리스트 (Computed Properties)
     // 오늘 요일에 해당하면서 반복 습관 + 일회성 습관 필터링하여 담는 변수
     private var todayHabits: [Habit] {
+        // 데이터가 아예 없으면 즉시 반환하여 연산 낭비 방지
+        guard !habit.isEmpty else { return [] }
+        
         let weekday = Calendar.current.component(.weekday, from: currentDate)
         
         return habit.filter { item in
@@ -61,56 +69,7 @@ struct TodayView: View {
         guard !todayHabits.isEmpty else { return 0 }
         return Double(todayCompletedCount) / Double(todayHabitCount)
     }
-    
-    
-    // 연속일 계산 프로퍼티
-    private var currentStreak: Int {
-        var streak = 0
-        var daysAgo = 0
-        let calendar = Calendar.current
-        let today = calendar.startOfDay(for: currentDate)
-        
-        // 기록이 끊길 때까지 무한히 과거로 탐색
-        while true {
-            guard let dateToCheck = calendar.date(byAdding: .day, value: -daysAgo, to: today) else { break }
-            
-            // 1. 해당 날짜에 해야 할 습관 필터링
-            let habitsOnThatDay = habit.filter { h in
-                let weekday = calendar.component(.weekday, from: dateToCheck)
-                let isRepeatDay = h.repeatDays.contains(weekday)
-                let isCreatedBefore = calendar.startOfDay(for: h.createdAt) <= dateToCheck
-                return !h.isArchived && isRepeatDay && isCreatedBefore
-            }
-            
-            // 2. 쉬는 날이면 카운트 유지하고 계속 진행
-            if habitsOnThatDay.isEmpty {
-                daysAgo += 1
-                continue
-            }
-            
-            // 3. 습관이 있는 날 완료 여부 확인
-            let isDone = habitsOnThatDay.contains { h in
-                h.logs.contains { log in
-                    calendar.isDate(log.date, inSameDayAs: dateToCheck) && log.isDone
-                }
-            }
-            
-            if isDone {
-                streak += 1
-                daysAgo += 1
-            } else {
-                // 오늘(daysAgo == 0)인데 아직 안 한 거면 계속 탐색,
-                // 하지만 과거 날짜인데 안 한 거면 여기서 스트릭 종료!
-                if daysAgo > 0 { break }
-                daysAgo += 1
-            }
-            
-            // 안전장치: 혹시 모를 무한 루프 방지 (예: 10년치)
-            if daysAgo > 3650 { break }
-        }
-        return streak
-    }
-    
+
     
     var body: some View {
         
@@ -171,6 +130,22 @@ struct TodayView: View {
             }
             .fullScreenCover(isPresented: $isPresentingCreateView) {
                 HabitCreateContainerView()
+            }
+            // onAppear: 사용자가 앱을 완전히 종료 후 새로 킬 떄, 다른 탭에 갔다가 다시 돌아올 떄 실행 됩니다.
+            .onAppear {
+                checkYesterdayStreak()
+            }
+            // scenePhase: 백그라운드 복귀 체크, 홈 화면으로 나갔다가 다음 날 돌아오는 경우, onAppear 호출 안될 경우 대비
+            .onChange(of: scenePhase) { oldValue, newValue in
+                if newValue == .active {
+                    // 앱이 백그라운드에 있다가 다시 전면으로 나올 떄 체크
+                    checkYesterdayStreak()
+                }
+            }
+            .sheet(isPresented: $isPresentingStreakResetView) {
+                StreakResetView(brokenStreak: lastBrokenStreak)
+                    .presentationDetents([.medium])
+                    .presentationDragIndicator(.visible)
             }
         }
         
@@ -260,6 +235,7 @@ struct TodayView: View {
                             DetailHabit(habit: item)
                         } label: {
                             habitCardView(item)
+
                         }
                         Divider()
                     }
@@ -309,6 +285,7 @@ struct TodayView: View {
                         Text(habit.title)
                             .font(.body)
                             .fontWeight(.bold)
+                            .foregroundStyle(Color(.label))
                         
                         // 주간 달성 횟수 표시
                         ColoredText(
@@ -317,13 +294,15 @@ struct TodayView: View {
                             originalFont: .caption2,
                             coloredFont: .callout
                         )
+                        .fontWeight(.bold)
+                        .foregroundStyle(Color(.secondaryLabel))
                     }
                     
                     Spacer()
                     
                     // 체크 버튼
                     Button  {
-                        withAnimation(.spring) {
+                        withAnimation(.easeInOut) {
                             toggleCompletion(for: habit)
                         }
                     } label: {
@@ -402,21 +381,14 @@ struct TodayView: View {
                 .foregroundStyle(.secondary)
             
             VStack(spacing: 12) {
-                
-                
-                
                 HStack(alignment: .top) {
                     ForEach(DayOfWeek.allCases) { day in
                         // 전체 습관 리스트
                         dayProgressColumn(day: day, habits: habit)
                     }
                 }
-                
                 Divider()
-                
                 streakStatusView
-               
-               
             }
             .padding(16)
             .background(
@@ -590,8 +562,8 @@ struct TodayView: View {
                 ColoredText(
                     originalText: "지금까지 총 \(habit.count) 개의 습관과 함께하고 있어요",
                     coloredText: "\(habit.count)",
-                    originalFont: .subheadline,
-                    coloredFont: .headline
+                    originalFont: .caption,
+                    coloredFont: .title3
                 )
                 
                 // 전체 및 진행 중 습관
@@ -653,6 +625,9 @@ struct TodayView: View {
         // 시간 정보를 제외한 오늘 날짜의 시작점 (00:00:00)
         let targetDate = Calendar.current.startOfDay(for: currentDate)
         
+        // 토글 전 오늘 이미 완료된 습관이 하나라도 있는지 체크
+        let wasAnytingDoneToday = todayHabits.contains { $0.isCompletedOnDay(on: targetDate) }
+        
         // 해당 날짜의 기존 습관 기록 검색
         if let existingLog = habit.logs.first(where: { Calendar.current.isDate($0.date, inSameDayAs: targetDate) }) {
             // 이미 기록이 있다면 상태만 반전
@@ -667,6 +642,78 @@ struct TodayView: View {
             
             // 관계에 추가
             habit.logs.append(newHabitLog)
+        }
+        
+        // 토글 후 오늘 완료된 습관이 있는지 다시 체크
+        let isAnytingDoneNew = todayHabits.contains { $0.isCompletedOnDay(on: targetDate) }
+        
+        // 연속일 업데이트
+        updateStreakData(from: wasAnytingDoneToday, to: isAnytingDoneNew)
+        
+    }
+    
+    
+    // MARK: - 연속일을 업데이트 하는 함수 (toggleCompletion함수에서 사용)
+    private func updateStreakData(from before: Bool, to after: Bool) {
+        if !before && after {
+            // 오늘 처음으로 하나 완료 -> 연속일 + 1
+            currentStreak += 1
+            
+            // 새로운 연속일이 시작되면, 나중에 연속일이 깨졌을 때의 알림 받기 위해 값을 리셋
+            hasAcknowledgedReset = false
+            
+            // 최장 기록 갱신 체크
+            if currentStreak > bestStreak {
+                bestStreak = currentStreak
+            }
+        } else if before && !after {
+            // 오늘 유일하게 완료했던 습관을 취소함 -> 연속일 - 1
+            currentStreak = max(0, currentStreak - 1)
+        }
+    }
+    
+    
+    // MARK: - 연속일을 어제 했는지 여부를 확인하는 함수
+    private func checkYesterdayStreak() {
+        
+        // 이미 확인을 완료한 상태라면 다시 계산하거나 띄울 필요가 없음
+        guard !hasAcknowledgedReset else { return }
+        
+        
+        let calendar = Calendar.current
+        
+        // 어제의 시작 시점
+        guard let yesterday = calendar.date(byAdding: .day, value: -1, to: calendar.startOfDay(for: currentDate)) else { return }
+        
+        // 어제 당시에 수행했어야 하는 모든 습관 필터링
+        let yesterdayHabits = habit.filter { h in
+            let weekday = calendar.component(.weekday, from: yesterday)
+            let isRepeatDay = h.repeatDays.contains(weekday)
+            
+            // 어제 이전에 생성되었는지만 확인 (어제 이미 존재했던 습관인지)
+            let wasExistedYesterday = calendar.startOfDay(for: h.createdAt) <= yesterday
+            
+            // 어제 졸업했더라도 어제는 "해야 했던 날"이기 때문
+            return isRepeatDay && wasExistedYesterday
+        }
+        
+        // 어제 해야 할 습관이 하나라도 있었는지 확인
+        if !yesterdayHabits.isEmpty {
+            // 그 습관들 중 하나라도 완료된 로그가 있는지 확인
+            let wasDoneYesterday = yesterdayHabits.contains { h in
+                h.logs.contains { log in
+                    calendar.isDate(log.date, inSameDayAs: yesterday) && log.isDone
+                }
+            }
+            
+            // 어제 하나라도 안 했다면 오늘 스트릭을 0으로 리셋
+            if !wasDoneYesterday {
+                lastBrokenStreak = currentStreak
+                currentStreak = 0
+                isPresentingStreakResetView = true
+            }
+        } else {
+            // 어제 원래 쉬는 날이었다면 연속일은 그대로 유지
         }
     }
 }

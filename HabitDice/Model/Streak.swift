@@ -41,7 +41,7 @@ struct StreakLevel {
     var mainMessage: String {
         switch type {
         case .starting:   return "시작이 반! 이제 막 타오른 귀한 불꽃이에요."
-        case .enduring:   return "포기하고 싶을 때 잘 버텨낸 대견한 불꽃입니다."
+        case .enduring:   return "포기하고 싶을 때 잘 버텨낸 기특한 불꽃입니다."
         case .familiar:   return "안 하면 허전할 정도로 익숙해진 불꽃이네요."
         case .solid:      return "어떤 유혹에도 흔들리지 않는 단단한 불꽃입니다."
         case .miraculous: return "내 몸의 일부가 된 기적의 불꽃이 완성되었어요!"
