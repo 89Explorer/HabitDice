@@ -337,6 +337,9 @@ final class HabitLog {
     // 역관계: 이 로그가 어떤 습관에 속하는지 명시
     var habit: Habit?
     
+    // 1:1 관계 (하나의 로그는 하나의 회고만 가질 수 있기 때문)
+    @Relationship(deleteRule: .cascade) var reflect: HabitReflect?
+    
     init(date: Date = Date(), isDone: Bool = false , completedCount: Int = 0) {
         self.date = date
         self.isDone = isDone
@@ -457,5 +460,22 @@ struct HabitStatus {
         case 4...7: return "단단한 내공이 느껴져요!\n벌써 여러 개의 습관을 정복한 당신은 이미 자기관리의 고수네요. 🏆"
         default: return "전설적인 루티너의 탄생!\n당신이 걸어온 길 자체가 하나의 기적이자 완벽한 루틴입니다. 👑"
         }
+    }
+}
+
+
+// MARK: 습관 회고를 기록하는 데이터 모델 
+@Model
+final class HabitReflect {
+    var mood: Mood
+    var tagIds: [String]
+    var memo: String?
+    
+    @Relationship(inverse: \HabitLog.reflect) var log: HabitLog?
+    
+    init(mood: Mood, tagIds: [String], memo: String? = nil) {
+        self.mood = mood
+        self.tagIds = tagIds
+        self.memo = memo
     }
 }

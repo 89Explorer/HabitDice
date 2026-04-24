@@ -27,6 +27,7 @@ struct TodayView: View {
     @AppStorage("bestStreak") private var bestStreak: Int = 0    // 연속일 중에 최장 연속일을 저장하는 변수
     @AppStorage("hasAcknowledgedReset") private var hasAcknowledgedReset: Bool = false    // 연속일이 깨졌을 경우에 대비한 안내뮤 보이기
     
+    
     // MARK: - 필터링된 습관 리스트 (Computed Properties)
     // 오늘 요일에 해당하면서 반복 습관 + 일회성 습관 필터링하여 담는 변수
     private var todayHabits: [Habit] {
@@ -75,7 +76,7 @@ struct TodayView: View {
         
         NavigationStack {
             ZStack {
-                
+                    
                 Color(.blue).opacity(0.1).ignoresSafeArea()
                 
                 ScrollView(.vertical, showsIndicators: false) {
@@ -88,6 +89,7 @@ struct TodayView: View {
                         .padding(.horizontal, 20)
                     
                     WeeklyFlowView
+                
                         .padding(.top, 12)
                         .padding(.horizontal, 20)
                     
@@ -96,8 +98,8 @@ struct TodayView: View {
                         .padding(.horizontal, 20)
                 }
             }
-            .navigationTitle("✨오늘 하루도 힘내세요")
             .navigationBarTitleDisplayMode(.inline)
+            .navigationTitle("힘내세요🔥")
             .overlay(alignment: .bottomTrailing) {
                 Button {
                     isPresentingCreateView.toggle()
@@ -222,6 +224,9 @@ struct TodayView: View {
                         message: "아직 습관이 없네요 🌱",
                         subMessage: "첫 번째 습관을 만들어, 작은 변화를 시작해보세요 🍀"
                     )
+                    .onTapGesture {
+                        isPresentingCreateView = true
+                    }
                 } else if todayHabits.isEmpty {
                     emptyHabitView(
                         icon: "moon.stars",
@@ -480,7 +485,7 @@ struct TodayView: View {
         // 현재 연속일을 넣어 StreakLevel 인스턴스 생성
         let level = StreakLevel(count: currentStreak)
         
-        return HStack {
+        return HStack(alignment: .center) {
             VStack(alignment: .leading, spacing: 8) {
                 
                 HStack(spacing: 8) {
@@ -519,13 +524,15 @@ struct TodayView: View {
                     .id("STREAK_FLAME_\(currentStreak)")    // 상태 유지 목적
                     .phaseAnimator([0, 1]) { content, phase in
                                 content
-                                    .scaleEffect(phase == 1 ? 1.03 : 1.0, anchor: .bottom)
+                                    .scaleEffect(phase == 1 ? 1.15 : 1.0, anchor: .bottom)
                                     .offset(y: phase == 1 ? -2 : 0)
                             } animation: { phase in
-                                .easeInOut(duration: 1.5).repeatForever(autoreverses: true)
+                                    .easeInOut(duration: 3.0).repeatForever(autoreverses: true)
                             }
-                            .frame(maxHeight: 100) // 불꽃이 움직일 수 있는 충분한 '공간'을 미리 고정
-                            .contentShape(Rectangle()) // 터치 영역 혹은 레이아웃 안정성 확보
+                            //.frame(width: level.fontSize * 1.5, height: level.fontSize * 1.5)
+                            //.frame(maxHeight: 150) // 불꽃이 움직일 수 있는 충분한 '공간'을 미리 고정
+                            .frame(maxWidth: level.fontSize * 1.5, maxHeight: level.fontSize * 1.5)
+                            //.contentShape(Rectangle()) // 터치 영역 혹은 레이아웃 안정성 확보
                 
                 Text(level.name)
                     .font(.footnote)
@@ -533,12 +540,14 @@ struct TodayView: View {
                     .padding(.vertical, 4)
                     .background(Capsule().fill(Color.orange.opacity(0.2)))
                     .foregroundStyle(.orange)
+                    .fixedSize(horizontal: true, vertical: false)
 
             }
+            //.frame(minWidth: 80)
             .animation(.none, value: todayHabits.count) // 데이터가 바뀔 때 이 영역은 '튀는' 애니메이션을 하지 않음
             
         }
-        .hSpacing(.leading)
+        //.hSpacing(.leading)
     }
     
     

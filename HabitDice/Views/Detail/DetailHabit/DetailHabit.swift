@@ -685,10 +685,33 @@ struct DetailHabit: View {
         isEditing = true
     }
     
+    // MARK: - 습관 졸업하는 함수
     private func doGraduate() {
+        // 기존 알림 객체 백업 (취소를 위해 필요)
+        let notificationToCancel = habit.notification
+        
+        // 모델 데이터 업데이트 (졸업 처리)
         habit.habitArchive()
-        withAnimation(.easeInOut) {
-            showGraduateCompleted = false
+        habit.isAlarmOn = false
+        habit.notification = nil // 관계 끊기 (선택 사항: 기록 보존을 원하면 유지)
+
+        // 비동기 알림 취소 처리
+        Task {
+            // 백업해둔 알림 객체가 있다면 시스템에서 삭제
+            if let notification = notificationToCancel {
+                container.notificationRepository.cancelNotification(notification: notification)
+            }
+            
+            // 예약된 목록 확인
+            container.notificationRepository.checkPendingNotifications()
+            
+            // SwiftData 명시적 저장 및 UI 업데이트
+            await MainActor.run {
+                container.save() // 명시적 저장
+                withAnimation(.easeInOut) {
+                    showGraduateCompleted = false
+                }
+            }
         }
     }
     
