@@ -20,6 +20,7 @@ struct TodayView: View {
     @State private var isPresentingCreateView: Bool = false
     @State private var isPresentingStreakResetView: Bool = false    // 연속일이 깨졌을 떄 보여주는 안내 시트 제어하는 변수
     @State private var lastBrokenStreak: Int = 0    // 깨지기 전 스트릭 저장용
+    @State private var isPresentingReflectionView: Bool = false     // 습관 회고 시트를 제어하는 변수
     
     @Namespace private var flame
     
@@ -309,6 +310,7 @@ struct TodayView: View {
                     Button  {
                         withAnimation(.easeInOut) {
                             toggleCompletion(for: habit)
+                            isPresentingReflectionView = true
                         }
                     } label: {
                         ZStack {
@@ -352,6 +354,11 @@ struct TodayView: View {
                     .overlay(Capsule().stroke(Color.blue, lineWidth: 1))
                 }
             }
+        }
+        .sheet(isPresented: $isPresentingReflectionView) {
+            HabitReflectionView(habit: habit, targetDate: currentDate)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
         }
     }
     
@@ -687,7 +694,6 @@ struct TodayView: View {
         
         // 이미 확인을 완료한 상태라면 다시 계산하거나 띄울 필요가 없음
         guard !hasAcknowledgedReset else { return }
-        
         
         let calendar = Calendar.current
         
