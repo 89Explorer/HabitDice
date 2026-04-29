@@ -23,6 +23,22 @@ enum Mood: String, Codable, CaseIterable {
         case .tired: return "힘들었어요"
         }
     }
+    
+    var reportMessage: String {
+        switch self {
+        case .happy: return "긍정적인 에너지가 가득 느껴져요!"
+        case .neutral: return "편안하고 차분하게 잘 해내고 계시네요."
+        case .tired: return "힘든 상황에서도 포기하지 않으셨군요."
+        }
+    }
+    
+    var subMessage: String {
+        switch self {
+        case .happy: return "이 습관이 삶에 기본 좋은 변화를 주고 있는 것 같아요."
+        case .neutral: return "잔잔한 물결처럼 꾸준히 나아가는 모습이 참 보기 좋아요."
+        case .tired: return "가장 하기 싫은 날 해내는 것이 진짜 성취라고 해요."
+        }
+    }
 }
 
 
@@ -42,7 +58,7 @@ enum TagCategory {
 }
 
 
-// 태그 상수 데이터 
+// 태그 상수 데이터
 struct HabitTagData {
     static let allTags: [HabitTag] = [
         // --- 내적 요인 (Internal) ---

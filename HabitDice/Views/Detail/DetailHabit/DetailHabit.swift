@@ -66,6 +66,9 @@ struct DetailHabit: View {
                         .blur(radius: isEditing ? 5 : 0)
                         .disabled(isEditing ? true : false)
                     
+                    reflectSummarySection
+                        .blur(radius: isEditing ? 5 : 0)
+                    
                 }
                 .padding(.top, 10)
             }
@@ -571,8 +574,6 @@ struct DetailHabit: View {
                 )
         )
         .padding(.horizontal, 24)
-        
-        
     }
     
     private func statItem(value: String, label: String) -> some View {
@@ -624,29 +625,6 @@ struct DetailHabit: View {
         .buttonStyle(.plain)
     }
     
-    private var bottomArea: some View {
-        VStack(spacing: 8) {
-            Button {
-                print("저장하기")
-            } label: {
-                Text("수정하기")
-                    .padding(20)
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .foregroundStyle(Color(.label))
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20)
-                            .fill(
-                                Color(.systemBlue)
-                            )
-                    )
-                    .padding(.horizontal, 24)
-                
-            }
-        }
-    }
-    
     private var editBanner: some View {
         Text("트리거, 반복, 알람을 수정할 수 있어요 👍")
             .font(.subheadline)
@@ -661,8 +639,122 @@ struct DetailHabit: View {
     }
     
     
+    // MARK: - 회고 요약 리포트
+    private var reflectSummarySection: some View {
+        
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("회고 리포트")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 4)
+                Spacer()
+                NavigationLink {
+                    HabitReflectionArchiveView(habit: habit)
+                } label: {
+                    Text("전체보기")
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.blue.opacity(0.8))
+                }
+            }
+            .padding(.horizontal, 4)
+            
+            // 최상위 기본 데이터 추출
+            if let topStat = habit.moodStatistics.first {
+                
+                let topMood = topStat.mood
+                let totalReflects = habit.logs.compactMap { $0.reflect }.count
+                
+                // 데이터가 있을 떄 보여줄 뷰
+                VStack(alignment: .leading, spacing: 10) {
+                    // 메인 타이틀 문구
+                    VStack(alignment: .leading, spacing: 8) {
+                        ColoredText(
+                            originalText: "\(habit.emoji) \(habit.title) 를 할 때",
+                            coloredText: "\(habit.emoji) \(habit.title)",
+                            originalFont: .footnote,
+                            coloredFont: .headline
+                        )
+                        .foregroundStyle(Color(.label))
+                        .fontWeight(.bold)
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            ColoredText(
+                                originalText: "\(topMood.reportMessage)",
+                                coloredText: "\(topMood.reportMessage)",
+                                originalFont: .footnote,
+                                coloredFont: .headline
+                            )
+                            
+                            ColoredText(
+                                originalText: "(\(totalReflects)회 중 \(topStat.count)회)",
+                                coloredText: "\(totalReflects)",
+                                originalFont: .footnote,
+                                coloredFont: .headline
+                            )
+                        }
+                        .foregroundStyle(Color(.label))
+                        .fontWeight(.bold)
+                    }
+                    
+                    Text(topMood.subMessage)
+                        .font(.footnote)
+                        .lineSpacing(4)
+                        .foregroundStyle(.primary.opacity(0.8))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(getMoodColor(topMood).opacity(0.12))
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(getMoodColor(topMood).opacity(0.2), lineWidth: 1)
+                        )
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+            } else {
+                // 데이터가 없을 때 (아직 회고가 없는 경우)
+                VStack(alignment: .center, spacing: 8) {
+                    Text("아직 쌓인 기록이 없어요")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    
+                    Text("오늘의 습관을 완료하고\n첫 기분 리포트를 확인해보세요!")
+                        .font(.caption)
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+            }
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(
+                    Color(.systemBackground)
+                )
+        )
+        .padding(.horizontal, 24)
+    }
+    
+    
     // MARK: - 로직
     
+    // 기분별 메인 색상을 반환하는 헬퍼 함수
+    private func getMoodColor(_ mood: Mood) -> Color {
+        switch mood {
+        case .happy: return .orange
+        case .neutral: return .blue
+        case .tired: return .purple
+        }
+    }
+
     private func loadDraft() {
         self.draftTrigger = habit.selectedTriggerAction ?? "설정 안함"
         self.draftIsRepeatOn = habit.isRepeatOn
@@ -694,7 +786,7 @@ struct DetailHabit: View {
         habit.habitArchive()
         habit.isAlarmOn = false
         habit.notification = nil // 관계 끊기 (선택 사항: 기록 보존을 원하면 유지)
-
+        
         // 비동기 알림 취소 처리
         Task {
             // 백업해둔 알림 객체가 있다면 시스템에서 삭제

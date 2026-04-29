@@ -20,7 +20,8 @@ struct TodayView: View {
     @State private var isPresentingCreateView: Bool = false
     @State private var isPresentingStreakResetView: Bool = false    // 연속일이 깨졌을 떄 보여주는 안내 시트 제어하는 변수
     @State private var lastBrokenStreak: Int = 0    // 깨지기 전 스트릭 저장용
-    @State private var isPresentingReflectionView: Bool = false     // 습관 회고 시트를 제어하는 변수
+    //@State private var isPresentingReflectionView: Bool = false     // 습관 회고 시트를 제어하는 변수
+    @State private var selectedHabitForReflection: Habit? = nil    // Bool 타입의 시트 제어 대신, Identifiable 방식으로 시트를 제어하는 변수
     
     @Namespace private var flame
     
@@ -241,10 +242,15 @@ struct TodayView: View {
                             DetailHabit(habit: item)
                         } label: {
                             habitCardView(item)
-
                         }
                         Divider()
                     }
+                    .sheet(item: $selectedHabitForReflection) { habit in
+                        HabitReflectionView(habit: habit, targetDate: currentDate)
+                            .presentationDetents([.large])
+                                    .presentationDragIndicator(.visible)
+                    }
+                    
                 }
             }
             .hSpacing(.leading)
@@ -256,6 +262,7 @@ struct TodayView: View {
                     )
             )
         }
+        
     }
     
     
@@ -310,7 +317,8 @@ struct TodayView: View {
                     Button  {
                         withAnimation(.easeInOut) {
                             toggleCompletion(for: habit)
-                            isPresentingReflectionView = true
+                            //isPresentingReflectionView = true
+                            selectedHabitForReflection = habit
                         }
                     } label: {
                         ZStack {
@@ -354,11 +362,6 @@ struct TodayView: View {
                     .overlay(Capsule().stroke(Color.blue, lineWidth: 1))
                 }
             }
-        }
-        .sheet(isPresented: $isPresentingReflectionView) {
-            HabitReflectionView(habit: habit, targetDate: currentDate)
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
         }
     }
     

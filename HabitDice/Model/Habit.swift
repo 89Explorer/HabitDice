@@ -479,3 +479,88 @@ final class HabitReflect {
         self.memo = memo
     }
 }
+
+
+// MARK: 회고 기능에 필요한 연산 프로퍼티
+extension Habit {
+    // 습관의 모든 회고에서 Mood 별 빈도수를 계산, 내림차순 정렬된 튜플 배열로 반환
+    var moodStatistics: [(mood: Mood, count: Int)] {
+        // 모든 로그에서 reflect가 있고, mood가 있는 것만 추출
+        let allMoods = logs.compactMap { $0.reflect?.mood }
+        
+        // 빈도수 딕셔너리 생성 [Mood: Int]
+        let frequencyDict = Dictionary(grouping: allMoods, by: {$0})
+            .mapValues { $0.count }
+        
+        // 빈도수가 높은 순서대로 정렬하여 반환
+        return frequencyDict.map { (mood: $0.key, count: $0.value) }
+            .sorted { $0.count > $1.count }
+    }
+}
+
+
+// MARK: - Preview용 회고 샘플 데이터
+extension Habit {
+    static var previewHabitWithReflections: Habit {
+        let habit = Habit(
+            title: "매일 아침 달리기",
+            emoji: "🏃",
+            createdAt: Calendar.current.date(byAdding: .day, value: -28, to: Date())!,
+            isArchived: false,
+            selectedTriggerAction: "기상 직후",
+            isRepeatOn: true,
+            repeatDays: [1, 3, 5], // 월, 수, 금
+            isAlarmOn: true,
+            logs: []
+        )
+        
+        let calendar = Calendar.current
+        func date(daysAgo: Int) -> Date {
+            calendar.date(byAdding: .day, value: -daysAgo, to: Date())!
+        }
+        
+        // 월(1), 수(3), 금(5) 기준으로 지난 4주치 로그 생성
+        // 오늘이 월요일이라고 가정
+        let logData: [(daysAgo: Int, isDone: Bool, mood: Mood?, tagIds: [String], memo: String?)] = [
+            // 4주 전
+            (28, true,  .happy,   ["internal_easy", "internal_habitual"],       "생각보다 쉬웠다!"),
+            (26, true,  .happy,   ["internal_willpower", "internal_focus"],     "집중해서 잘 했어"),
+            (24, true,  .neutral, ["internal_willpower"],                        nil),
+            // 3주 전
+            (21, true,  .happy,   ["internal_habitual", "internal_easy"],       "점점 익숙해지는 느낌"),
+            (19, false, nil,      [],                                            nil), // 미완료 → 회고 없음
+            (17, true,  .tired,   ["external_no_time", "internal_forgot"],      "바빠서 겨우 했다"),
+            // 2주 전
+            (14, true,  .happy,   ["internal_easy", "internal_habitual"],       "요즘 많이 익숙해짐"),
+            (12, true,  .tired,   ["external_sudden_event", "internal_forgot"], "갑자기 일이 생겨서 힘들었다"),
+            (10, true,  .happy,   ["internal_focus", "internal_easy"],          nil),
+            // 1주 전
+            (7,  true,  .happy,   ["internal_habitual", "internal_willpower"],  "이제 거의 자동으로 하게 됨"),
+            (5,  false, nil,      [],                                            nil), // 미완료 → 회고 없음
+            (3,  true,  .happy,   ["internal_easy", "internal_habitual"],       "오늘도 잘 해냈다"),
+        ]
+        
+        habit.logs = logData.map { data in
+            let log = HabitLog(
+                date: date(daysAgo: data.daysAgo),
+                isDone: data.isDone,
+                completedCount: 0
+            )
+            
+            // 완료한 날에만 회고 붙이기
+            if let mood = data.mood {
+                let reflect = HabitReflect(
+                    mood: mood,
+                    tagIds: data.tagIds,
+                    memo: data.memo
+                )
+                reflect.log = log
+                log.reflect = reflect
+            }
+            
+            return log
+        }
+        
+        return habit
+    }
+}
